@@ -29,12 +29,33 @@ export default function RoomSetup() {
   }
 
   const update = (field, value) => {
-    setForm(prev => ({ ...prev, [field]: value }))
+    setForm(prev => {
+      const next = { ...prev, [field]: value }
+      // Lock dimensions when Square is selected
+      if (next.shape === 'Square') {
+        if (field === 'width') next.length = value
+        if (field === 'length') next.width = value
+      }
+      return next
+    })
     setErrors(prev => ({ ...prev, [field]: null }))
   }
 
-  const previewW = Math.min(form.width * 36, 280)
-  const previewH = Math.min(form.length * 36, 200)
+  // Also lock dimensions when switching TO Square
+  const updateShape = (shape) => {
+    setForm(prev => {
+      const next = { ...prev, shape }
+      if (shape === 'Square') next.length = prev.width
+      return next
+    })
+  }
+
+  const MAX_PX = 240
+  const scale = Math.min(MAX_PX / Math.max(form.width, form.length), 40)
+  const pW = form.width * scale
+  const pH = form.length * scale
+  // L-shape: top-right quadrant cut out (2/3 of each dimension)
+  const lCut = { w: pW * 0.55, h: pH * 0.5 }
 
   return (
     <div className="rs-page">
@@ -89,7 +110,7 @@ export default function RoomSetup() {
                 <button
                   type="button" key={s}
                   className={`rs-shape-btn ${form.shape === s ? 'rs-shape-btn--active' : ''}`}
-                  onClick={() => update('shape', s)}
+                  onClick={() => updateShape(s)}
                 >
                   <span className="rs-shape-icon">
                     {s === 'Rectangle' ? '▬' : s === 'Square' ? '■' : '⌐'}
@@ -124,17 +145,42 @@ export default function RoomSetup() {
             <div className="rs-preview">
               <div className="rs-preview-label">Live preview</div>
               <div className="rs-preview-area">
-                <div
-                  className="rs-preview-box"
-                  style={{
-                    background: form.floorColor,
-                    border: `10px solid ${form.wallColor}`,
-                    width: `${previewW}px`,
-                    height: `${previewH}px`,
-                  }}
+                <svg
+                  width={pW + 20} height={pH + 20}
+                  viewBox={`0 0 ${pW + 20} ${pH + 20}`}
+                  style={{ overflow: 'visible' }}
                 >
-                  <span>{form.width}m × {form.length}m</span>
-                </div>
+                  {form.shape === 'L-Shape' ? (
+                    <polygon
+                      points={`
+                        10,10
+                        ${10 + pW},10
+                        ${10 + pW},${10 + lCut.h}
+                        ${10 + lCut.w},${10 + lCut.h}
+                        ${10 + lCut.w},${10 + pH}
+                        10,${10 + pH}
+                      `}
+                      fill={form.floorColor}
+                      stroke={form.wallColor}
+                      strokeWidth={8}
+                      strokeLinejoin="round"
+                    />
+                  ) : (
+                    <rect
+                      x={10} y={10}
+                      width={pW} height={pH}
+                      fill={form.floorColor}
+                      stroke={form.wallColor}
+                      strokeWidth={8}
+                      rx={4}
+                    />
+                  )}
+                  <text
+                    x={10 + pW / 2} y={10 + pH / 2}
+                    textAnchor="middle" dominantBaseline="middle"
+                    fontSize="12" fill="rgba(0,0,0,0.5)" fontFamily="Inter,sans-serif"
+                  >{form.width}m × {form.length}m</text>
+                </svg>
               </div>
             </div>
 
