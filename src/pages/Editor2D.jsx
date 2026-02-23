@@ -44,24 +44,49 @@ function getLShapeRects(room) {
   ]
 }
 
-// ── Boundary clamp ───────────────────────────────────────────
+// ── Boundary clamp (rotation-aware) ─────────────────────────
+function getRotatedBBox(item) {
+  const iw = item.width * SCALE * item.scale
+  const ih = item.height * SCALE * item.scale
+  const rad = (item.rotation || 0) * Math.PI / 180
+  const cos = Math.abs(Math.cos(rad))
+  const sin = Math.abs(Math.sin(rad))
+  // Axis-aligned bounding box of the rotated rect
+  // Konva rotates around the item's top-left by default
+  return {
+    bw: iw * cos + ih * sin,
+    bh: iw * sin + ih * cos,
+    // offset from top-left to bounding box top-left
+    ox: iw / 2 * (1 - cos) + ih / 2 * sin - ih / 2 * sin,
+    oy: iw / 2 * sin - ih / 2 * (1 - cos) + ih / 2 * (1 - cos),
+  }
+}
+
 function clampToRoom(x, y, item, room) {
   const iw = item.width * SCALE * item.scale
   const ih = item.height * SCALE * item.scale
+  const rad = (item.rotation || 0) * Math.PI / 180
+  const cos = Math.abs(Math.cos(rad))
+  const sin = Math.abs(Math.sin(rad))
+  // Full AABB dimensions after rotation
+  const bw = iw * cos + ih * sin
+  const bh = iw * sin + ih * cos
+  // Shift from item origin (top-left) to AABB top-left
+  const dx = (bw - iw) / 2
+  const dy = (bh - ih) / 2
 
   if (room.shape === 'L-Shape') {
     const [main, wing] = getLShapeRects(room)
     const cy = y + ih / 2
     const rect = cy > main.y + main.h ? wing : main
-    return {
-      x: Math.max(rect.x, Math.min(x, rect.x + rect.w - iw)),
-      y: Math.max(rect.y, Math.min(y, rect.y + rect.h - ih)),
-    }
+    const cx = Math.max(rect.x + dx, Math.min(x, rect.x + rect.w - iw - dx))
+    const cy2 = Math.max(rect.y + dy, Math.min(y, rect.y + rect.h - ih - dy))
+    return { x: cx, y: cy2 }
   }
 
   return {
-    x: Math.max(PAD, Math.min(x, PAD + room.width * SCALE - iw)),
-    y: Math.max(PAD, Math.min(y, PAD + room.length * SCALE - ih)),
+    x: Math.max(PAD + dx, Math.min(x, PAD + room.width * SCALE - iw - dx)),
+    y: Math.max(PAD + dy, Math.min(y, PAD + room.length * SCALE - ih - dy)),
   }
 }
 
@@ -75,20 +100,23 @@ function MeasurementLines({ room }) {
   const lines = []
   const tickLen = 6
 
+  // Dynamic ruler color — visible on both light and dark
+  const rulerColor = 'rgba(150,150,150,0.8)'
+
   // Horizontal ticks along top edge
   for (let m = 0; m <= room.width; m++) {
     const x = PAD + m * SCALE
     lines.push(
       <Line key={`ht-${m}`} points={[x, PAD - 8, x, PAD - 8 - tickLen]}
-        stroke="#94a3b8" strokeWidth={1} />,
+        stroke={rulerColor} strokeWidth={1} />,
       <Text key={`hl-${m}`} x={x - 8} y={PAD - 24} text={`${m}m`}
-        fontSize={10} fill="#94a3b8" />
+        fontSize={10} fill={rulerColor} />
     )
   }
   // Horizontal ruler line
   lines.push(
     <Line key="h-ruler" points={[PAD, PAD - 11, PAD + room.width * SCALE, PAD - 11]}
-      stroke="#94a3b8" strokeWidth={1} />
+      stroke={rulerColor} strokeWidth={1} />
   )
 
   // Vertical ticks along left edge
@@ -96,15 +124,15 @@ function MeasurementLines({ room }) {
     const y = PAD + m * SCALE
     lines.push(
       <Line key={`vt-${m}`} points={[PAD - 8, y, PAD - 8 - tickLen, y]}
-        stroke="#94a3b8" strokeWidth={1} />,
+        stroke={rulerColor} strokeWidth={1} />,
       <Text key={`vl-${m}`} x={4} y={y - 5} text={`${m}`}
-        fontSize={10} fill="#94a3b8" />
+        fontSize={10} fill={rulerColor} />
     )
   }
   // Vertical ruler line
   lines.push(
     <Line key="v-ruler" points={[PAD - 11, PAD, PAD - 11, PAD + room.length * SCALE]}
-      stroke="#94a3b8" strokeWidth={1} />
+      stroke={rulerColor} strokeWidth={1} />
   )
 
   return <>{lines}</>
@@ -306,7 +334,7 @@ export default function Editor2D() {
                   lines.push(
                     <Line key={`gx-${i}`}
                       points={[x, PAD, x, PAD + room.length * SCALE]}
-                      stroke="rgba(0,0,0,0.07)" strokeWidth={1} listening={false} />
+                      stroke="rgba(120,100,80,0.13)" strokeWidth={1} listening={false} />
                   )
                 }
                 for (let j = 1; j < stepsH; j++) {
@@ -314,7 +342,7 @@ export default function Editor2D() {
                   lines.push(
                     <Line key={`gy-${j}`}
                       points={[PAD, y, PAD + room.width * SCALE, y]}
-                      stroke="rgba(0,0,0,0.07)" strokeWidth={1} listening={false} />
+                      stroke="rgba(120,100,80,0.13)" strokeWidth={1} listening={false} />
                   )
                 }
                 return lines
@@ -346,17 +374,28 @@ export default function Editor2D() {
                 />
               ))}
 
-              {/* Labels */}
-              {showLabels && furniture.map(item => (
-                <Text
-                  key={'lbl-' + item.id}
-                  x={item.x + 5} y={item.y + 5}
-                  text={item.type}
-                  fontSize={11} fill="white"
-                  listening={false}
-                  rotation={item.rotation}
-                />
-              ))}
+              {/* Labels — centered on furniture, rotate with item */}
+              {showLabels && furniture.map(item => {
+                const iw = item.width * SCALE * item.scale
+                const ih = item.height * SCALE * item.scale
+                return (
+                  <Text
+                    key={'lbl-' + item.id}
+                    x={item.x + iw / 2}
+                    y={item.y + ih / 2}
+                    offsetX={iw / 2}
+                    offsetY={6}
+                    width={iw}
+                    text={item.type}
+                    fontSize={11}
+                    fill="rgba(255,255,255,0.92)"
+                    align="center"
+                    listening={false}
+                    rotation={item.rotation}
+                    ellipsis
+                  />
+                )
+              })}
 
               <Transformer ref={trRef} rotateEnabled boundBoxFunc={(_, n) => n} />
             </Layer>
