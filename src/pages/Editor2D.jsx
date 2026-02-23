@@ -374,17 +374,17 @@ export default function Editor2D() {
                 />
               ))}
 
-              {/* Labels — centered on furniture, rotate with item */}
+              {/* Labels — same pivot as rect: (item.x, item.y) */}
               {showLabels && furniture.map(item => {
                 const iw = item.width * SCALE * item.scale
                 const ih = item.height * SCALE * item.scale
                 return (
                   <Text
                     key={'lbl-' + item.id}
-                    x={item.x + iw / 2}
-                    y={item.y + ih / 2}
-                    offsetX={iw / 2}
-                    offsetY={6}
+                    x={item.x}
+                    y={item.y}
+                    offsetX={0}
+                    offsetY={6 - ih / 2}
                     width={iw}
                     text={item.type}
                     fontSize={11}
