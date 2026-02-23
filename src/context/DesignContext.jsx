@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 
 const DesignContext = createContext()
 
@@ -18,6 +18,37 @@ export function DesignProvider({ children }) {
     return saved ? JSON.parse(saved) : []
   })
 
+  // ── Undo / Redo history ──────────────────────────────────────
+  const historyRef = useRef([[]])   // array of furniture snapshots
+  const historyIdxRef = useRef(0)      // current position
+
+  const pushHistory = useCallback((newFurniture) => {
+    // Trim any redo entries ahead of current position
+    historyRef.current = historyRef.current.slice(0, historyIdxRef.current + 1)
+    historyRef.current.push(newFurniture.map(f => ({ ...f })))
+    historyIdxRef.current = historyRef.current.length - 1
+  }, [])
+
+  const undo = useCallback(() => {
+    if (historyIdxRef.current > 0) {
+      historyIdxRef.current -= 1
+      setFurniture(historyRef.current[historyIdxRef.current].map(f => ({ ...f })))
+      setSelectedId(null)
+    }
+  }, [])
+
+  const redo = useCallback(() => {
+    if (historyIdxRef.current < historyRef.current.length - 1) {
+      historyIdxRef.current += 1
+      setFurniture(historyRef.current[historyIdxRef.current].map(f => ({ ...f })))
+      setSelectedId(null)
+    }
+  }, [])
+
+  const canUndo = () => historyIdxRef.current > 0
+  const canRedo = () => historyIdxRef.current < historyRef.current.length - 1
+
+  // ── Persist designs ──────────────────────────────────────────
   useEffect(() => {
     try {
       localStorage.setItem('savedDesigns', JSON.stringify(savedDesigns))
@@ -26,6 +57,7 @@ export function DesignProvider({ children }) {
     }
   }, [savedDesigns])
 
+  // ── Design save / load / delete ──────────────────────────────
   const saveDesign = (name) => {
     const design = {
       id: Date.now(),
@@ -49,12 +81,16 @@ export function DesignProvider({ children }) {
     setRoom(design.room)
     setFurniture(design.furniture)
     setSelectedId(null)
+    // Reset history for the loaded design
+    historyRef.current = [design.furniture.map(f => ({ ...f }))]
+    historyIdxRef.current = 0
   }
 
   const deleteDesign = (id) => {
     setSavedDesigns(prev => prev.filter(d => d.id !== id))
   }
 
+  // ── Furniture CRUD (all push to history) ─────────────────────
   const addFurniture = (item) => {
     const newItem = {
       id: Date.now(),
@@ -65,18 +101,35 @@ export function DesignProvider({ children }) {
       scale: 1,
       color: item.defaultColor
     }
-    setFurniture(prev => [...prev, newItem])
+    setFurniture(prev => {
+      const next = [...prev, newItem]
+      pushHistory(next)
+      return next
+    })
     setSelectedId(newItem.id)
   }
 
   const updateFurniture = (id, updates) => {
-    setFurniture(prev =>
-      prev.map(f => f.id === id ? { ...f, ...updates } : f)
-    )
+    setFurniture(prev => {
+      const next = prev.map(f => f.id === id ? { ...f, ...updates } : f)
+      return next
+    })
+  }
+
+  // Called after drag / property change settles — commits to history
+  const commitFurnitureHistory = () => {
+    setFurniture(prev => {
+      pushHistory(prev)
+      return prev
+    })
   }
 
   const deleteFurniture = (id) => {
-    setFurniture(prev => prev.filter(f => f.id !== id))
+    setFurniture(prev => {
+      const next = prev.filter(f => f.id !== id)
+      pushHistory(next)
+      return next
+    })
     setSelectedId(null)
   }
 
@@ -87,7 +140,8 @@ export function DesignProvider({ children }) {
       selectedId, setSelectedId,
       savedDesigns,
       saveDesign, loadDesign, deleteDesign,
-      addFurniture, updateFurniture, deleteFurniture
+      addFurniture, updateFurniture, deleteFurniture, commitFurnitureHistory,
+      undo, redo, canUndo, canRedo
     }}>
       {children}
     </DesignContext.Provider>
