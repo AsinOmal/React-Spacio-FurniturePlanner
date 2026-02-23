@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useDesign } from '../context/DesignContext'
 import './RoomSetup.css'
 
+const SHAPES = ['Rectangle', 'Square', 'L-Shape']
+
 export default function RoomSetup() {
   const navigate = useNavigate()
   const { room, setRoom } = useDesign()
@@ -12,9 +14,9 @@ export default function RoomSetup() {
   const validate = () => {
     const errs = {}
     if (!form.width || form.width < 1 || form.width > 20)
-      errs.width = 'Width must be between 1 and 20 metres'
+      errs.width = 'Must be between 1 – 20 metres'
     if (!form.length || form.length < 1 || form.length > 20)
-      errs.length = 'Length must be between 1 and 20 metres'
+      errs.length = 'Must be between 1 – 20 metres'
     return errs
   }
 
@@ -31,63 +33,86 @@ export default function RoomSetup() {
     setErrors(prev => ({ ...prev, [field]: null }))
   }
 
-  const previewW = Math.min(form.width * 40, 300)
-  const previewH = Math.min(form.length * 40, 220)
+  const previewW = Math.min(form.width * 36, 280)
+  const previewH = Math.min(form.length * 36, 200)
 
   return (
-    <div className="roomsetup">
-      <header className="page-header">
-        <button onClick={() => navigate('/dashboard')} className="btn-back">← Back</button>
-        <h1>Room Setup</h1>
-      </header>
-      <main className="roomsetup-main">
-        <div className="setup-card">
-          <h2>Configure Your Room</h2>
-          <form onSubmit={handleSubmit}>
-            <div className="form-row">
-              <div className="form-group">
+    <div className="rs-page">
+      {/* ── Nav ── */}
+      <nav className="sp-nav">
+        <span className="sp-nav-logo">Spacio</span>
+        <button className="sp-btn sp-btn-ghost" onClick={() => navigate('/dashboard')}>
+          ← Dashboard
+        </button>
+      </nav>
+
+      <main className="rs-main">
+        <div className="rs-card">
+          {/* Header */}
+          <div className="rs-header">
+            <h1 className="rs-title">Configure your room</h1>
+            <p className="rs-sub">Set dimensions, shape, and finishes before you start designing.</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="rs-form">
+            {/* Dimensions */}
+            <div className="rs-section-label">Dimensions</div>
+            <div className="rs-row">
+              <div className="rs-field">
                 <label>Width (metres)</label>
                 <input
                   type="number"
+                  className={errors.width ? 'rs-input rs-input--err' : 'rs-input'}
                   value={form.width}
                   onChange={e => update('width', parseFloat(e.target.value))}
                   min="1" max="20" step="0.5"
                 />
-                {errors.width && <span className="field-error">{errors.width}</span>}
+                {errors.width && <span className="rs-error">{errors.width}</span>}
               </div>
-              <div className="form-group">
+              <div className="rs-field">
                 <label>Length (metres)</label>
                 <input
                   type="number"
+                  className={errors.length ? 'rs-input rs-input--err' : 'rs-input'}
                   value={form.length}
                   onChange={e => update('length', parseFloat(e.target.value))}
                   min="1" max="20" step="0.5"
                 />
-                {errors.length && <span className="field-error">{errors.length}</span>}
+                {errors.length && <span className="rs-error">{errors.length}</span>}
               </div>
             </div>
 
-            <div className="form-group">
-              <label>Room Shape</label>
-              <select value={form.shape} onChange={e => update('shape', e.target.value)}>
-                <option>Rectangle</option>
-                <option>Square</option>
-                <option>L-Shape</option>
-              </select>
+            {/* Shape */}
+            <div className="rs-section-label" style={{ marginTop: 20 }}>Shape</div>
+            <div className="rs-shape-row">
+              {SHAPES.map(s => (
+                <button
+                  type="button" key={s}
+                  className={`rs-shape-btn ${form.shape === s ? 'rs-shape-btn--active' : ''}`}
+                  onClick={() => update('shape', s)}
+                >
+                  <span className="rs-shape-icon">
+                    {s === 'Rectangle' ? '▬' : s === 'Square' ? '■' : '⌐'}
+                  </span>
+                  <span>{s}</span>
+                </button>
+              ))}
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label>Wall Colour</label>
-                <div className="color-input">
+            {/* Colours */}
+            <div className="rs-section-label" style={{ marginTop: 20 }}>Finishes</div>
+            <div className="rs-row">
+              <div className="rs-field">
+                <label>Wall colour</label>
+                <div className="rs-color">
                   <input type="color" value={form.wallColor}
                     onChange={e => update('wallColor', e.target.value)} />
                   <span>{form.wallColor}</span>
                 </div>
               </div>
-              <div className="form-group">
-                <label>Floor Colour</label>
-                <div className="color-input">
+              <div className="rs-field">
+                <label>Floor colour</label>
+                <div className="rs-color">
                   <input type="color" value={form.floorColor}
                     onChange={e => update('floorColor', e.target.value)} />
                   <span>{form.floorColor}</span>
@@ -95,16 +120,17 @@ export default function RoomSetup() {
               </div>
             </div>
 
-            <div className="room-preview">
-              <p>Live Preview</p>
-              <div className="preview-area">
+            {/* Live preview */}
+            <div className="rs-preview">
+              <div className="rs-preview-label">Live preview</div>
+              <div className="rs-preview-area">
                 <div
-                  className="preview-box"
+                  className="rs-preview-box"
                   style={{
                     background: form.floorColor,
                     border: `10px solid ${form.wallColor}`,
                     width: `${previewW}px`,
-                    height: `${previewH}px`
+                    height: `${previewH}px`,
                   }}
                 >
                   <span>{form.width}m × {form.length}m</span>
@@ -112,7 +138,7 @@ export default function RoomSetup() {
               </div>
             </div>
 
-            <button type="submit" className="btn-continue">
+            <button type="submit" className="sp-btn sp-btn-primary rs-submit">
               Continue to Editor →
             </button>
           </form>

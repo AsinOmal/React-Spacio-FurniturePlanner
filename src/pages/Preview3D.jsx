@@ -116,7 +116,10 @@ export default function Preview3D() {
   return (
     <div className="preview3d">
       <div className="preview-topbar">
-        <button onClick={() => navigate('/editor')} className="btn-back2d">← Back to 2D</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => navigate('/editor')} className="btn-back2d">← Back to 2D</button>
+          <span style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 18, fontWeight: 700, color: 'var(--s-text)' }}>Spacio</span>
+        </div>
         <div className="topbar-title">
           <span>🏠</span>
           <span>3D Room Preview</span>

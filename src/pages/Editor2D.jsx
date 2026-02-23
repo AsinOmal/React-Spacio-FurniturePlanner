@@ -5,6 +5,17 @@ import { useDesign } from '../context/DesignContext'
 import SaveModal from '../components/SaveModal'
 import './Editor2D.css'
 
+function useDark() {
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
+  const toggle = () => {
+    const next = !dark
+    document.documentElement.classList.toggle('dark', next)
+    localStorage.setItem('spacio-dark', next ? '1' : '0')
+    setDark(next)
+  }
+  return [dark, toggle]
+}
+
 const SCALE = 80
 const PAD = 40
 const GRID_PX = SCALE / 4   // 20px = 0.25m snap resolution
@@ -116,6 +127,15 @@ export default function Editor2D() {
   const [showSave, setShowSave] = useState(false)
   const [snapOn, setSnapOn] = useState(false)
   const [showLabels, setShowLabels] = useState(true)
+  const [showGrid, setShowGrid] = useState(true)
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
+
+  const toggleDark = () => {
+    const next = !dark
+    document.documentElement.classList.toggle('dark', next)
+    localStorage.setItem('spacio-dark', next ? '1' : '0')
+    setDark(next)
+  }
 
   const isLShape = room.shape === 'L-Shape'
   const lRects = isLShape ? getLShapeRects(room) : []
@@ -179,12 +199,16 @@ export default function Editor2D() {
     <div className="editor">
       {/* ── Top Bar ─────────────────────────────────────────── */}
       <div className="editor-topbar">
-        <button onClick={() => navigate('/dashboard')} className="btn-topbar">← Dashboard</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => navigate('/dashboard')} className="btn-topbar">← Dashboard</button>
+          <span className="topbar-logo">Spacio</span>
+        </div>
         <div className="topbar-title">
           <span>2D Editor</span>
           <span className="room-dims">{room.width}m × {room.length}m{isLShape ? ' · L' : ''}</span>
         </div>
         <div className="topbar-right">
+          <button className="sp-dark-toggle" onClick={toggleDark} title="Dark mode">{dark ? '☀️' : '🌙'}</button>
           <button onClick={() => setShowSave(true)} className="btn-save">💾 Save</button>
           <button onClick={() => navigate('/preview3d')} className="btn-3d">🏠 3D</button>
         </div>
@@ -210,6 +234,11 @@ export default function Editor2D() {
             onClick={() => setSnapOn(s => !s)}
             title="Snap to Grid"
           >⊞ Snap {snapOn ? 'ON' : 'OFF'}</button>
+          <button
+            className={`tool-btn ${showGrid ? 'tool-btn--active' : ''}`}
+            onClick={() => setShowGrid(s => !s)}
+            title="Toggle Grid"
+          >⊟ Grid</button>
           <button
             className={`tool-btn ${showLabels ? 'tool-btn--active' : ''}`}
             onClick={() => setShowLabels(s => !s)}
@@ -266,6 +295,30 @@ export default function Editor2D() {
                   width={room.width * SCALE} height={room.length * SCALE}
                   fill={room.floorColor} stroke={room.wallColor} strokeWidth={14} />
               )}
+
+              {/* Floor grid overlay */}
+              {showGrid && (() => {
+                const lines = []
+                const steps = Math.round((room.width * SCALE) / GRID_PX)
+                const stepsH = Math.round((room.length * SCALE) / GRID_PX)
+                for (let i = 1; i < steps; i++) {
+                  const x = PAD + i * GRID_PX
+                  lines.push(
+                    <Line key={`gx-${i}`}
+                      points={[x, PAD, x, PAD + room.length * SCALE]}
+                      stroke="rgba(0,0,0,0.07)" strokeWidth={1} listening={false} />
+                  )
+                }
+                for (let j = 1; j < stepsH; j++) {
+                  const y = PAD + j * GRID_PX
+                  lines.push(
+                    <Line key={`gy-${j}`}
+                      points={[PAD, y, PAD + room.width * SCALE, y]}
+                      stroke="rgba(0,0,0,0.07)" strokeWidth={1} listening={false} />
+                  )
+                }
+                return lines
+              })()}
 
               {/* Measurement ruler lines */}
               <MeasurementLines room={room} />
