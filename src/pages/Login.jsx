@@ -14,7 +14,7 @@ export default function Login() {
       localStorage.setItem('isLoggedIn', 'true')
       navigate('/dashboard')
     } else {
-      setError('Invalid username or password. Please try again.')
+      setError('Invalid credentials. Please try again.')
     }
   }
 
@@ -23,7 +23,7 @@ export default function Login() {
       <div className="login-card">
         <div className="login-logo">
           <span className="logo-icon">🛋️</span>
-          <h1>Furniture Planner</h1>
+          <h1>Spacio</h1>
           <p>Designer Portal</p>
         </div>
         <form onSubmit={handleLogin} className="login-form">
@@ -50,7 +50,8 @@ export default function Login() {
           {error && <p className="error-msg">⚠️ {error}</p>}
           <button type="submit" className="btn-primary">Login</button>
         </form>
-        <p className="login-hint">Demo — Username: designer · Password: furniture123</p>
+        <p className="login-hint">Demo — Username: <strong>designer</strong> · Password: <strong>furniture123</strong></p>
+        <button className="btn-back-landing" onClick={() => navigate('/')}>← Back to Spacio</button>
       </div>
     </div>
   )

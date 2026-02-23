@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { DesignProvider } from './context/DesignContext'
+import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import RoomSetup from './pages/RoomSetup'
@@ -16,7 +17,8 @@ export default function App() {
     <DesignProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/room-setup" element={<PrivateRoute><RoomSetup /></PrivateRoute>} />
           <Route path="/editor" element={<PrivateRoute><Editor2D /></PrivateRoute>} />
