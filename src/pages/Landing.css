@@ -5,15 +5,15 @@
 ───────────────────────────────────────────── */
 
 :root {
-  --c-bg:        #FFFFFF;
-  --c-surface:   #F9F8F6;
-  --c-border:    #E8E5DF;
-  --c-text:      #1A1A1A;
-  --c-muted:     #6B6860;
-  --c-accent:    #B89A6A;
-  --c-accent-dk: #9A7D52;
-  --c-glow:      rgba(184, 154, 106, 0.18);
-  --c-glow-md:   rgba(184, 154, 106, 0.28);
+  --c-bg:        var(--s-bg);
+  --c-surface:   var(--s-surface);
+  --c-border:    var(--s-border);
+  --c-text:      var(--s-text);
+  --c-muted:     var(--s-text-2);
+  --c-accent:    var(--s-accent);
+  --c-accent-dk: var(--s-accent-d);
+  --c-glow:      var(--s-glow);
+  --c-glow-md:   rgba(184, 135, 75, 0.28);
 
   --r-card:   20px;
   --r-btn:    10px;
@@ -31,45 +31,6 @@
   color: var(--c-text);
   min-height: 100vh;
   overflow-x: hidden;
-}
-
-/* ─────────────── NAVBAR ─────────────── */
-.landing-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 22px 64px;
-  border-bottom: 1px solid var(--c-border);
-  position: sticky;
-  top: 0;
-  background: var(--c-bg);
-  z-index: 100;
-}
-
-.landing-logo {
-  font-family: var(--font-serif);
-  font-size: 1.6rem;
-  font-weight: 600;
-  letter-spacing: -0.5px;
-  color: var(--c-text);
-}
-
-.btn-signin {
-  font-family: var(--font-sans);
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--c-text);
-  background: transparent;
-  border: 1.5px solid var(--c-border);
-  border-radius: var(--r-btn);
-  padding: 9px 22px;
-  cursor: pointer;
-  letter-spacing: 0.2px;
-  transition: border-color 0.2s, color 0.2s;
-}
-.btn-signin:hover {
-  border-color: var(--c-accent);
-  color: var(--c-accent);
 }
 
 /* ─────────────── HERO ─────────────── */
@@ -137,8 +98,9 @@
   transition: background 0.2s, transform 0.15s;
 }
 .btn-primary:hover {
-  background: #333;
+  background: var(--c-muted);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18), 0 0 0 1px var(--c-text);
 }
 .btn-primary:active { transform: translateY(0); }
 
@@ -151,9 +113,14 @@
   border: none;
   cursor: pointer;
   letter-spacing: 0.2px;
-  transition: color 0.2s;
+  transition: all 0.2s;
+  padding: 8px 16px;
+  border-radius: var(--r-btn);
 }
-.btn-ghost:hover { color: var(--c-accent); }
+.btn-ghost:hover {
+  background: var(--s-surface-2);
+  color: var(--c-text);
+}
 
 .btn-ghost-sm {
   font-family: var(--font-sans);
@@ -164,9 +131,13 @@
   border: none;
   cursor: pointer;
   padding: 4px 8px;
-  transition: color 0.2s;
+  transition: all 0.2s;
+  border-radius: var(--r-btn);
 }
-.btn-ghost-sm:hover { color: var(--c-accent); }
+.btn-ghost-sm:hover {
+  background: var(--s-surface-2);
+  color: var(--c-text);
+}
 
 /* ─────────────── HERO VISUAL ─────────────── */
 .hero-visual {
@@ -242,7 +213,7 @@
   position: absolute; left: 76px; top: 76px;
   width: 22px; height: 22px;
   background: var(--c-accent); border-radius: 50%;
-  box-shadow: 0 0 18px 6px rgba(184, 154, 106, 0.5);
+  box-shadow: 0 0 18px 6px rgba(184, 135, 75, 0.5);
 }
 
 /* ─────────────── DIVIDER ─────────────── */

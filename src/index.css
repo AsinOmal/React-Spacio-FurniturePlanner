@@ -110,17 +110,21 @@ input, select, textarea { font-family: var(--f-sans); }
 
 /* ── Shared button primitives ────────────────── */
 .sp-btn {
+  font-family: var(--f-sans);
+  font-size: 14.5px;
+  font-weight: 500;
+  border-radius: var(--r-md);
+  height: 38px;
+  padding: 0 16px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-family: var(--f-sans);
-  font-size: 13.5px;
-  font-weight: 500;
-  padding: 8px 18px;
-  border-radius: var(--r-md);
-  border: none;
-  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-  white-space: nowrap;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  outline: none;
+  border: none; /* Kept from original */
+  white-space: nowrap; /* Kept from original */
 }
 
 /* Primary: dark bg → always shows light text, hover slightly lighter */

@@ -1,19 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Trash2, BookDashed } from 'lucide-react'
 import { useDesign } from '../context/DesignContext'
 import DeleteModal from '../components/DeleteModal'
+import Navbar from '../components/Navbar'
 import './Dashboard.css'
-
-function useDark() {
-  const [dark, setDark] = useState(() => localStorage.getItem('spacio-dark') === '1')
-  const toggle = () => {
-    const next = !dark
-    document.documentElement.classList.toggle('dark', next)
-    localStorage.setItem('spacio-dark', next ? '1' : '0')
-    setDark(next)
-  }
-  return [dark, toggle]
-}
 
 function DesignThumbnail({ design }) {
   const { room, furniture } = design
@@ -49,12 +40,6 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const { savedDesigns, loadDesign, deleteDesign, setRoom, setFurniture } = useDesign()
   const [deleteTarget, setDeleteTarget] = useState(null)
-  const [dark, toggleDark] = useDark()
-
-  const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn')
-    navigate('/')
-  }
 
   const handleNew = () => {
     setRoom({ width: 4, length: 3, shape: 'Rectangle', wallColor: '#F5F5DC', floorColor: '#D2B48C' })
@@ -79,22 +64,7 @@ export default function Dashboard() {
 
   return (
     <div className="db-root">
-
-      {/* ── Top Navbar (styled like Landing) ── */}
-      <nav className="db-nav">
-        <span className="db-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>Spacio</span>
-        <div className="db-nav-links">
-          <button className="db-nav-link db-nav-active">My Designs</button>
-          <button className="db-nav-link" onClick={() => navigate('/')}>Home</button>
-        </div>
-        <div className="db-nav-right">
-          <button className="db-nav-link" onClick={toggleDark} title="Toggle dark mode">
-            {dark ? '☀️' : '🌙'}
-          </button>
-          <button className="db-new-btn" onClick={handleNew}>+ New Design</button>
-          <button className="db-logout-btn" onClick={handleLogout}>Sign Out</button>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* ── Main Content ── */}
       <main className="db-main">
@@ -136,12 +106,14 @@ export default function Dashboard() {
         {/* ── Grid / Empty ── */}
         {savedDesigns.length === 0 ? (
           <div className="db-empty">
-            <div className="db-empty-icon">📐</div>
+            <div className="db-empty-icon">
+              <BookDashed size={48} strokeWidth={1} color="var(--s-text-3)" />
+            </div>
             <h2 className="db-empty-title">No designs yet</h2>
             <p className="db-empty-sub">
               Configure a room and start placing furniture — it takes less than a minute.
             </p>
-            <button className="db-new-btn" onClick={handleNew} style={{ marginTop: 24 }}>
+            <button className="btn-primary" onClick={handleNew} style={{ marginTop: 8 }}>
               Start your first design
             </button>
           </div>
@@ -175,8 +147,8 @@ export default function Dashboard() {
                   <button className="db-act-btn db-act-edit" onClick={() => handleEdit(design)}>
                     Open Editor
                   </button>
-                  <button className="db-act-btn db-act-del" onClick={() => setDeleteTarget(design)} title="Delete">
-                    🗑️
+                  <button className="db-act-btn db-act-del" onClick={() => setDeleteTarget(design)} title="Delete" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </article>

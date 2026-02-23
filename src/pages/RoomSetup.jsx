@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDesign } from '../context/DesignContext'
+import Navbar from '../components/Navbar'
 import './RoomSetup.css'
 
 const SHAPES = ['Rectangle', 'Square', 'L-Shape']
@@ -60,12 +61,7 @@ export default function RoomSetup() {
   return (
     <div className="rs-page">
       {/* ── Nav ── */}
-      <nav className="sp-nav">
-        <span className="sp-nav-logo">Spacio</span>
-        <button className="sp-btn sp-btn-ghost" onClick={() => navigate('/dashboard')}>
-          ← Dashboard
-        </button>
-      </nav>
+      <Navbar />
 
       <main className="rs-main">
         <div className="rs-card">
@@ -143,7 +139,10 @@ export default function RoomSetup() {
 
             {/* Live preview */}
             <div className="rs-preview">
-              <div className="rs-preview-label">Live preview</div>
+              <div className="rs-preview-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Live preview</span>
+                <span style={{ color: 'var(--s-text-3)', fontWeight: 'normal', fontSize: 13 }}>{form.width}m × {form.length}m</span>
+              </div>
               <div className="rs-preview-area">
                 <svg
                   width={pW + 20} height={pH + 20}
@@ -175,11 +174,6 @@ export default function RoomSetup() {
                       rx={4}
                     />
                   )}
-                  <text
-                    x={10 + pW / 2} y={10 + pH / 2}
-                    textAnchor="middle" dominantBaseline="middle"
-                    fontSize="12" fill="rgba(0,0,0,0.5)" fontFamily="Inter,sans-serif"
-                  >{form.width}m × {form.length}m</text>
                 </svg>
               </div>
             </div>
@@ -189,7 +183,7 @@ export default function RoomSetup() {
             </button>
           </form>
         </div>
-      </main>
-    </div>
+      </main >
+    </div >
   )
 }

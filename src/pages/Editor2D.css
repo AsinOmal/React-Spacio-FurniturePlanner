@@ -55,9 +55,12 @@
   border: 1.5px solid var(--s-border);
   padding: 7px 14px;
   border-radius: var(--r-md);
-  font-size: 13px;
+  font-size: 14.5px;
   font-weight: 500;
   transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .btn-topbar:hover {
   border-color: var(--s-accent);
@@ -71,15 +74,18 @@
   border: none;
   padding: 7px 16px;
   border-radius: var(--r-md);
-  font-size: 13px;
+  font-size: 14.5px;
   font-weight: 500;
   transition: background 0.18s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .btn-save:hover {
-  background: #3a3530;
-  color: #F7F4F0;
+  background: var(--s-text-2);
+  color: var(--s-bg);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18), 0 0 0 1px var(--s-text);
 }
 .btn-save:active { transform: translateY(0); }
 
@@ -89,9 +95,12 @@
   border: none;
   padding: 7px 16px;
   border-radius: var(--r-md);
-  font-size: 13px;
+  font-size: 14.5px;
   font-weight: 500;
   transition: background 0.18s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .btn-3d:hover {
   background: var(--s-accent-d);
@@ -122,25 +131,31 @@
 
 .tool-btn {
   font-family: var(--f-sans);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--s-text-2);
   background: var(--s-surface);
   border: 1.5px solid var(--s-border);
   border-radius: var(--r-sm);
-  padding: 5px 12px;
+  padding: 6px 14px;
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .tool-btn:hover { border-color: var(--s-accent); color: var(--s-accent); }
 
 .tool-btn--active {
   background: var(--s-accent);
-  color: white;
+  color: var(--s-bg);
   border-color: var(--s-accent);
 }
-.tool-btn--active:hover { background: var(--s-accent-d); }
+.tool-btn--active:hover { 
+  background: var(--s-accent-d);
+  color: var(--s-bg);
+}
 
 .tool-btn--dim {
   opacity: 0.35;
@@ -347,6 +362,10 @@
   font-weight: 500;
   margin-top: 8px;
   transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 .btn-remove:hover { background: var(--s-danger); color: white; border-color: var(--s-danger); }
 

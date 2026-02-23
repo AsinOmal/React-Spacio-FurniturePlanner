@@ -3,18 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { Stage, Layer, Rect, Line, Text, Transformer } from 'react-konva'
 import { useDesign } from '../context/DesignContext'
 import SaveModal from '../components/SaveModal'
+import {
+  ArrowLeft, Sun, Moon, Save, Box,
+  Undo2, Redo2, Maximize, Grid3x3, Tags, Download,
+  Trash2, Pointer, Package
+} from 'lucide-react'
 import './Editor2D.css'
-
-function useDark() {
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
-  const toggle = () => {
-    const next = !dark
-    document.documentElement.classList.toggle('dark', next)
-    localStorage.setItem('spacio-dark', next ? '1' : '0')
-    setDark(next)
-  }
-  return [dark, toggle]
-}
 
 const SCALE = 80
 const PAD = 40
@@ -152,12 +146,13 @@ export default function Editor2D() {
   const [showLabels, setShowLabels] = useState(true)
   const [showGrid, setShowGrid] = useState(true)
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
-  const [stageScale, setStageScale] = useState(1)
+  const [stageScale, setStageScale] = useState(1.4)
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 })
+  const [containerSize, setContainerSize] = useState({ w: 800, h: 600 })
   const ZOOM_MIN = 0.4, ZOOM_MAX = 3, ZOOM_STEP = 1.12
 
-  const cW = room.width * SCALE + PAD * 2
-  const cH = room.length * SCALE + PAD * 2
+  const canvasWidth = room.width * SCALE + PAD * 2
+  const canvasHeight = room.length * SCALE + PAD * 2
 
   // Auto-fit to screen on load
   useEffect(() => {
@@ -169,22 +164,24 @@ export default function Editor2D() {
       const availW = parentW - 112
       const availH = parentH - 112
 
-      const scaleX = availW / cW
-      const scaleY = availH / cH
+      const scaleX = availW / canvasWidth
+      const scaleY = availH / canvasHeight
       // Fit to the most constrained dimension
       const bestScale = Math.min(scaleX, scaleY, ZOOM_MAX)
 
       setStageScale(bestScale)
       // Center it
       setStagePos({
-        x: (parentW - cW * bestScale) / 2,
-        y: (parentH - cH * bestScale) / 2
+        x: (availW - canvasWidth * bestScale) / 2 + 56,
+        y: (availH - canvasHeight * bestScale) / 2 + 56
       })
+
+      setContainerSize({ w: parentW, h: parentH })
     }
     fitScreen()
     window.addEventListener('resize', fitScreen)
     return () => window.removeEventListener('resize', fitScreen)
-  }, [cW, cH])
+  }, [canvasWidth, canvasHeight])
 
   const toggleDark = () => {
     const next = !dark
@@ -279,7 +276,9 @@ export default function Editor2D() {
       {/* ── Top Bar ─────────────────────────────────────────── */}
       <div className="editor-topbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => navigate('/dashboard')} className="btn-topbar">← Dashboard</button>
+          <button onClick={() => navigate('/dashboard')} className="btn-topbar">
+            <ArrowLeft size={16} /> Dashboard
+          </button>
           <span className="topbar-logo">Spacio</span>
         </div>
         <div className="topbar-title">
@@ -287,9 +286,15 @@ export default function Editor2D() {
           <span className="room-dims">{room.width}m × {room.length}m{isLShape ? ' · L' : ''}</span>
         </div>
         <div className="topbar-right">
-          <button className="sp-dark-toggle" onClick={toggleDark} title="Dark mode">{dark ? '☀️' : '🌙'}</button>
-          <button onClick={() => setShowSave(true)} className="btn-save">💾 Save</button>
-          <button onClick={() => navigate('/preview3d')} className="btn-3d">🏠 3D</button>
+          <button className="sp-dark-toggle" onClick={toggleDark} title="Dark mode">
+            {dark ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          <button onClick={() => setShowSave(true)} className="btn-save">
+            <Save size={15} /> Save
+          </button>
+          <button onClick={() => navigate('/preview3d')} className="btn-3d">
+            <Box size={15} /> 3D
+          </button>
         </div>
       </div>
 
@@ -300,34 +305,34 @@ export default function Editor2D() {
             className={`tool-btn ${canUndo() ? '' : 'tool-btn--dim'}`}
             onClick={undo}
             title="Undo (Ctrl+Z)"
-          >↩ Undo</button>
+          ><Undo2 size={14} /> Undo</button>
           <button
             className={`tool-btn ${canRedo() ? '' : 'tool-btn--dim'}`}
             onClick={redo}
             title="Redo (Ctrl+Y)"
-          >↪ Redo</button>
+          ><Redo2 size={14} /> Redo</button>
         </div>
         <div className="toolstrip-right">
           <button
             className={`tool-btn ${snapOn ? 'tool-btn--active' : ''}`}
             onClick={() => setSnapOn(s => !s)}
             title="Snap to Grid"
-          >⊞ Snap {snapOn ? 'ON' : 'OFF'}</button>
+          ><Maximize size={14} /> Snap {snapOn ? 'ON' : 'OFF'}</button>
           <button
             className={`tool-btn ${showGrid ? 'tool-btn--active' : ''}`}
             onClick={() => setShowGrid(s => !s)}
             title="Toggle Grid"
-          >⊟ Grid</button>
+          ><Grid3x3 size={14} /> Grid</button>
           <button
             className={`tool-btn ${showLabels ? 'tool-btn--active' : ''}`}
             onClick={() => setShowLabels(s => !s)}
             title="Toggle Labels"
-          >🏷 Labels</button>
+          ><Tags size={14} /> Labels</button>
           <button
             className="tool-btn"
             onClick={handleExport}
             title="Export as PNG"
-          >📤 Export</button>
+          ><Download size={14} /> Export</button>
         </div>
       </div>
 
@@ -353,117 +358,121 @@ export default function Editor2D() {
           </div>
         </div>
 
-        {/* ── CENTRE: Canvas ────────────────────────────────── */}
-        <div className="canvas-area" style={{ overflow: 'auto', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }} ref={containerRef}>
-          <div style={{ padding: '40px', minWidth: 'min-content', minHeight: 'min-content' }}>
-            <Stage
-              ref={stageRef}
-              width={cW * stageScale}
-              height={cH * stageScale}
-              scaleX={stageScale}
-              scaleY={stageScale}
-              onWheel={handleWheel}
-              onClick={e => { if (e.target === e.target.getStage()) setSelectedId(null) }}
-              style={{ background: 'white', borderRadius: 8, boxShadow: 'var(--sh-lift)' }}
-            >
-              <Layer>
-                {/* Floor */}
-                {isLShape ? (
-                  lRects.map((r, i) => (
-                    <Rect key={i} x={r.x} y={r.y} width={r.w} height={r.h}
+        {/* ── CENTRE: Canvas Wrapper ────────────────────────────────── */}
+        <div className="canvas-wrapper" style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+          <div className="canvas-area" style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex' }} ref={containerRef}>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex' }}>
+              <Stage
+                ref={stageRef}
+                x={stagePos.x}
+                y={stagePos.y}
+                width={containerSize.w}
+                height={containerSize.h}
+                scaleX={stageScale}
+                scaleY={stageScale}
+                onWheel={handleWheel}
+                onClick={e => { if (e.target === e.target.getStage()) setSelectedId(null) }}
+                style={{ background: 'white', borderRadius: 8, boxShadow: 'var(--sh-lift)' }}
+              >
+                <Layer>
+                  {/* Floor */}
+                  {isLShape ? (
+                    lRects.map((r, i) => (
+                      <Rect key={i} x={r.x} y={r.y} width={r.w} height={r.h}
+                        fill={room.floorColor} stroke={room.wallColor} strokeWidth={14} />
+                    ))
+                  ) : (
+                    <Rect x={PAD} y={PAD}
+                      width={room.width * SCALE} height={room.length * SCALE}
                       fill={room.floorColor} stroke={room.wallColor} strokeWidth={14} />
-                  ))
-                ) : (
-                  <Rect x={PAD} y={PAD}
-                    width={room.width * SCALE} height={room.length * SCALE}
-                    fill={room.floorColor} stroke={room.wallColor} strokeWidth={14} />
-                )}
+                  )}
 
-                {/* Floor grid overlay */}
-                {showGrid && (() => {
-                  const lines = []
-                  const steps = Math.round((room.width * SCALE) / GRID_PX)
-                  const stepsH = Math.round((room.length * SCALE) / GRID_PX)
-                  for (let i = 1; i < steps; i++) {
-                    const x = PAD + i * GRID_PX
-                    lines.push(
-                      <Line key={`gx-${i}`}
-                        points={[x, PAD, x, PAD + room.length * SCALE]}
-                        stroke="rgba(120,100,80,0.13)" strokeWidth={1} listening={false} />
-                    )
-                  }
-                  for (let j = 1; j < stepsH; j++) {
-                    const y = PAD + j * GRID_PX
-                    lines.push(
-                      <Line key={`gy-${j}`}
-                        points={[PAD, y, PAD + room.width * SCALE, y]}
-                        stroke="rgba(120,100,80,0.13)" strokeWidth={1} listening={false} />
-                    )
-                  }
-                  return lines
-                })()}
+                  {/* Floor grid overlay */}
+                  {showGrid && (() => {
+                    const lines = []
+                    const steps = Math.round((room.width * SCALE) / GRID_PX)
+                    const stepsH = Math.round((room.length * SCALE) / GRID_PX)
+                    for (let i = 1; i < steps; i++) {
+                      const x = PAD + i * GRID_PX
+                      lines.push(
+                        <Line key={`gx-${i}`}
+                          points={[x, PAD, x, PAD + room.length * SCALE]}
+                          stroke="rgba(120,100,80,0.13)" strokeWidth={1} listening={false} />
+                      )
+                    }
+                    for (let j = 1; j < stepsH; j++) {
+                      const y = PAD + j * GRID_PX
+                      lines.push(
+                        <Line key={`gy-${j}`}
+                          points={[PAD, y, PAD + room.width * SCALE, y]}
+                          stroke="rgba(120,100,80,0.13)" strokeWidth={1} listening={false} />
+                      )
+                    }
+                    return lines
+                  })()}
 
-                {/* Measurement ruler lines */}
-                <MeasurementLines room={room} />
+                  {/* Measurement ruler lines */}
+                  <MeasurementLines room={room} />
 
-                {/* Furniture */}
-                {furniture.map(item => (
-                  <Rect
-                    key={item.id}
-                    id={'item-' + item.id}
-                    x={item.x} y={item.y}
-                    width={item.width * SCALE * item.scale}
-                    height={item.height * SCALE * item.scale}
-                    fill={item.color}
-                    stroke={selectedId === item.id ? '#2563eb' : 'rgba(0,0,0,0.2)'}
-                    strokeWidth={selectedId === item.id ? 2.5 : 1}
-                    rotation={item.rotation}
-                    draggable
-                    cornerRadius={4}
-                    shadowColor="black"
-                    shadowBlur={selectedId === item.id ? 10 : 2}
-                    shadowOpacity={0.2}
-                    onClick={() => setSelectedId(item.id)}
-                    onTap={() => setSelectedId(item.id)}
-                    onDragEnd={e => handleDragEnd(item, e)}
-                  />
-                ))}
-
-                {/* Labels — same pivot as rect: (item.x, item.y) */}
-                {showLabels && furniture.map(item => {
-                  const iw = item.width * SCALE * item.scale
-                  const ih = item.height * SCALE * item.scale
-                  return (
-                    <Text
-                      key={'lbl-' + item.id}
-                      x={item.x}
-                      y={item.y}
-                      offsetX={0}
-                      offsetY={6 - ih / 2}
-                      width={iw}
-                      text={item.type}
-                      fontSize={11}
-                      fill="rgba(255,255,255,0.92)"
-                      align="center"
-                      listening={false}
+                  {/* Furniture */}
+                  {furniture.map(item => (
+                    <Rect
+                      key={item.id}
+                      id={'item-' + item.id}
+                      x={item.x} y={item.y}
+                      width={item.width * SCALE * item.scale}
+                      height={item.height * SCALE * item.scale}
+                      fill={item.color}
+                      stroke={selectedId === item.id ? '#2563eb' : 'rgba(0,0,0,0.2)'}
+                      strokeWidth={selectedId === item.id ? 2.5 : 1}
                       rotation={item.rotation}
-                      ellipsis
+                      draggable
+                      cornerRadius={4}
+                      shadowColor="black"
+                      shadowBlur={selectedId === item.id ? 10 : 2}
+                      shadowOpacity={0.2}
+                      onClick={() => setSelectedId(item.id)}
+                      onTap={() => setSelectedId(item.id)}
+                      onDragEnd={e => handleDragEnd(item, e)}
                     />
-                  )
-                })}
+                  ))}
 
-                <Transformer ref={trRef} rotateEnabled boundBoxFunc={(_, n) => n} />
-              </Layer>
-            </Stage>
+                  {/* Labels — same pivot as rect: (item.x, item.y) */}
+                  {showLabels && furniture.map(item => {
+                    const iw = item.width * SCALE * item.scale
+                    const ih = item.height * SCALE * item.scale
+                    return (
+                      <Text
+                        key={'lbl-' + item.id}
+                        x={item.x}
+                        y={item.y}
+                        offsetX={0}
+                        offsetY={6 - ih / 2}
+                        width={iw}
+                        text={item.type}
+                        fontSize={11}
+                        fill="rgba(255,255,255,0.92)"
+                        align="center"
+                        listening={false}
+                        rotation={item.rotation}
+                        ellipsis
+                      />
+                    )
+                  })}
 
-            {/* Zoom HUD */}
-            <div className="zoom-hud">
-              <button className="zoom-btn" onClick={() => setStageScale(s => Math.min(ZOOM_MAX, s * ZOOM_STEP))}>+</button>
-              <span className="zoom-pct" onClick={resetZoom} title="Click to reset zoom">
-                {Math.round(stageScale * 100)}%
-              </span>
-              <button className="zoom-btn" onClick={() => setStageScale(s => Math.max(ZOOM_MIN, s / ZOOM_STEP))}>−</button>
+                  <Transformer ref={trRef} rotateEnabled boundBoxFunc={(_, n) => n} />
+                </Layer>
+              </Stage>
             </div>
+          </div>
+
+          {/* Zoom HUD */}
+          <div className="zoom-hud" style={{ position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 10 }}>
+            <button className="zoom-btn" onClick={() => setStageScale(s => Math.min(ZOOM_MAX, s * ZOOM_STEP))}>+</button>
+            <span className="zoom-pct" onClick={resetZoom} title="Click to reset zoom">
+              {Math.round(stageScale * 100)}%
+            </span>
+            <button className="zoom-btn" onClick={() => setStageScale(s => Math.max(ZOOM_MIN, s / ZOOM_STEP))}>−</button>
           </div>
         </div>
 
@@ -508,17 +517,18 @@ export default function Editor2D() {
               </div>
 
               <button onClick={() => deleteFurniture(selectedId)} className="btn-remove">
-                🗑️ Remove Item
+                <Trash2 size={13} /> Remove Item
               </button>
             </div>
           ) : (
             <div className="no-sel">
-              <span>👆</span>
+              <Pointer size={24} color="var(--s-text-3)" strokeWidth={1.5} />
               <p>Click any furniture item to edit its properties</p>
             </div>
           )}
           <div className="item-count">
-            📦 {furniture.length} item{furniture.length !== 1 ? 's' : ''}
+            <Package size={14} style={{ opacity: 0.6 }} />
+            {furniture.length} item{furniture.length !== 1 ? 's' : ''}
           </div>
         </div>
       </div>

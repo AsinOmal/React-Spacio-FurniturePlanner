@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Navbar from '../components/Navbar'
+import AuthModal from '../components/AuthModal'
 import './Landing.css'
 
 const FEATURES = [
@@ -22,33 +25,17 @@ const FEATURES = [
 export default function Landing() {
   const navigate = useNavigate()
   const loggedIn = localStorage.getItem('isLoggedIn') === 'true'
+  const [authOpen, setAuthOpen] = useState(false)
+  const [authView, setAuthView] = useState('choice')
+
+  const openAuth = (view) => {
+    setAuthView(view)
+    setAuthOpen(true)
+  }
 
   return (
     <div className="landing">
-
-      {/* ── Navbar ── */}
-      <nav className="landing-nav">
-        <span className="landing-logo">Spacio</span>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {loggedIn ? (
-            <>
-              <button className="btn-ghost-sm" onClick={() => navigate('/dashboard')}>
-                My Designs
-              </button>
-              <button className="btn-signin" onClick={() => {
-                localStorage.removeItem('isLoggedIn')
-                navigate('/')
-              }}>
-                Log Out
-              </button>
-            </>
-          ) : (
-            <button className="btn-signin" onClick={() => navigate('/login')}>
-              Sign In
-            </button>
-          )}
-        </div>
-      </nav>
+      <Navbar />
 
       {/* ── Hero ── */}
       <section className="hero">
@@ -75,10 +62,10 @@ export default function Landing() {
               </>
             ) : (
               <>
-                <button className="btn-primary" onClick={() => navigate('/login')}>
+                <button className="btn-primary" onClick={() => openAuth('choice')}>
                   Start Designing
                 </button>
-                <button className="btn-ghost" onClick={() => navigate('/login')}>
+                <button className="btn-ghost" onClick={() => openAuth('login')}>
                   Sign In →
                 </button>
               </>
@@ -129,9 +116,9 @@ export default function Landing() {
         <p className="cta-sub">
           {loggedIn
             ? 'Continue where you left off, or start something new.'
-            : 'Sign in and start your first design in under a minute.'}
+            : 'Start designing your first room as a guest, or sign in to save your work.'}
         </p>
-        <button className="btn-primary" onClick={() => navigate(loggedIn ? '/dashboard' : '/login')}>
+        <button className="btn-primary" onClick={() => loggedIn ? navigate('/dashboard') : openAuth('choice')}>
           {loggedIn ? 'Go to My Designs' : 'Open Spacio'}
         </button>
       </section>
@@ -142,6 +129,7 @@ export default function Landing() {
         <p className="footer-copy">© 2026 Spacio. Crafted with intention.</p>
       </footer>
 
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} initialView={authView} />
     </div>
   )
 }
