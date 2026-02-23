@@ -80,35 +80,27 @@ export default function Dashboard() {
   return (
     <div className="db-root">
 
-      {/* ── Sidebar ── */}
-      <aside className="db-sidebar">
-        <div className="db-sidebar-top">
-          <span className="db-logo">Spacio</span>
-          <nav className="db-nav">
-            <button className="db-nav-item db-nav-active">
-              <span className="db-nav-icon">🗂️</span> My Designs
-            </button>
-            <button className="db-nav-item" onClick={() => navigate('/')}>
-              <span className="db-nav-icon">🏠</span> Home
-            </button>
-          </nav>
+      {/* ── Top Navbar (styled like Landing) ── */}
+      <nav className="db-nav">
+        <span className="db-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>Spacio</span>
+        <div className="db-nav-links">
+          <button className="db-nav-link db-nav-active">My Designs</button>
+          <button className="db-nav-link" onClick={() => navigate('/')}>Home</button>
         </div>
-
-        <div className="db-sidebar-bottom">
-          <button className="db-side-btn" onClick={toggleDark} title="Toggle dark mode">
-            {dark ? '☀️  Light Mode' : '🌙  Dark Mode'}
+        <div className="db-nav-right">
+          <button className="db-nav-link" onClick={toggleDark} title="Toggle dark mode">
+            {dark ? '☀️' : '🌙'}
           </button>
-          <button className="db-side-btn db-side-logout" onClick={handleLogout}>
-            Sign Out
-          </button>
+          <button className="db-new-btn" onClick={handleNew}>+ New Design</button>
+          <button className="db-logout-btn" onClick={handleLogout}>Sign Out</button>
         </div>
-      </aside>
+      </nav>
 
-      {/* ── Main ── */}
+      {/* ── Main Content ── */}
       <main className="db-main">
 
-        {/* ── Top bar ── */}
-        <header className="db-topbar">
+        {/* ── Header ── */}
+        <div className="db-header">
           <div>
             <h1 className="db-title">My Designs</h1>
             <p className="db-sub">
@@ -117,10 +109,7 @@ export default function Dashboard() {
                 : `${savedDesigns.length} design${savedDesigns.length !== 1 ? 's' : ''}`}
             </p>
           </div>
-          <button className="db-new-btn" onClick={handleNew}>
-            + New Design
-          </button>
-        </header>
+        </div>
 
         {/* ── Stats strip ── */}
         {savedDesigns.length > 0 && (
@@ -160,12 +149,9 @@ export default function Dashboard() {
           <div className="db-grid">
             {savedDesigns.map(design => (
               <article key={design.id} className="db-card">
-                {/* Thumbnail */}
                 <div className="db-thumb">
                   <DesignThumbnail design={design} />
                 </div>
-
-                {/* Info */}
                 <div className="db-card-body">
                   <div className="db-card-row">
                     <h3 className="db-card-name">{design.name}</h3>
@@ -185,14 +171,11 @@ export default function Dashboard() {
                     )}
                   </div>
                 </div>
-
-                {/* Actions */}
                 <div className="db-card-actions">
                   <button className="db-act-btn db-act-edit" onClick={() => handleEdit(design)}>
                     Open Editor
                   </button>
-                  <button className="db-act-btn db-act-del" onClick={() => setDeleteTarget(design)}
-                    title="Delete">
+                  <button className="db-act-btn db-act-del" onClick={() => setDeleteTarget(design)} title="Delete">
                     🗑️
                   </button>
                 </div>

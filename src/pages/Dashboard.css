@@ -1,30 +1,31 @@
 /* ─────────────────────────────────────────────
    SPACIO — Dashboard
-   Sidebar + main area layout
+   Top-navbar layout (matches Landing nav aesthetic)
 ───────────────────────────────────────────── */
 
-/* ── Root Shell ── */
 .db-root {
   display: flex;
-  height: 100vh;
-  overflow: hidden;
+  flex-direction: column;
+  min-height: 100vh;
   background: var(--s-bg);
   font-family: var(--f-sans);
+  animation: pageIn 0.35s ease both;
 }
 
-/* ─────────────── SIDEBAR ─────────────── */
-.db-sidebar {
-  width: 220px;
-  flex-shrink: 0;
+/* ─────────────── TOP NAVBAR ─────────────── */
+.db-nav {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   justify-content: space-between;
+  padding: 0 48px;
+  height: 64px;
   background: var(--s-surface);
-  border-right: 1px solid var(--s-border);
-  padding: 28px 16px 24px;
+  border-bottom: 1px solid var(--s-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  gap: 24px;
 }
-
-.db-sidebar-top { display: flex; flex-direction: column; gap: 32px; }
 
 .db-logo {
   font-family: var(--f-serif);
@@ -32,73 +33,86 @@
   font-weight: 600;
   color: var(--s-text);
   letter-spacing: -0.3px;
-  padding-left: 8px;
+  flex-shrink: 0;
 }
 
-/* Nav links */
-.db-nav { display: flex; flex-direction: column; gap: 4px; }
-
-.db-nav-item {
+.db-nav-links {
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 10px 12px;
+  gap: 4px;
+  flex: 1;
+}
+
+.db-nav-link {
+  font-family: var(--f-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 7px 14px;
   border-radius: var(--r-md);
   border: none;
   background: transparent;
   color: var(--s-text-2);
-  font-size: 0.875rem;
-  font-weight: 500;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
-  text-align: left;
 }
-.db-nav-item:hover { background: var(--s-bg); color: var(--s-text); }
-.db-nav-active {
-  background: var(--s-glow) !important;
-  color: var(--s-accent) !important;
-  font-weight: 600;
+.db-nav-link:hover { background: var(--s-bg); color: var(--s-text); }
+.db-nav-active { color: var(--s-accent) !important; font-weight: 600; }
+
+.db-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
-.db-nav-icon { font-size: 1rem; }
 
-/* Sidebar bottom buttons */
-.db-sidebar-bottom { display: flex; flex-direction: column; gap: 8px; }
-
-.db-side-btn {
-  width: 100%;
-  padding: 9px 12px;
+.db-new-btn {
+  background: var(--s-text);
+  color: var(--s-surface);
+  border: none;
   border-radius: var(--r-md);
-  border: 1.5px solid var(--s-border);
-  background: transparent;
-  color: var(--s-text-2);
-  font-size: 0.8rem;
-  font-weight: 500;
+  padding: 9px 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
   cursor: pointer;
-  text-align: left;
-  transition: all 0.15s;
+  white-space: nowrap;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  letter-spacing: 0.2px;
 }
-.db-side-btn:hover { border-color: var(--s-accent); color: var(--s-accent); }
-.db-side-logout:hover { border-color: var(--s-danger); color: var(--s-danger); }
+.db-new-btn:hover {
+  background: #333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+.db-new-btn:active { transform: translateY(0); }
+
+.db-logout-btn {
+  font-family: var(--f-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--s-text-2);
+  background: transparent;
+  border: 1.5px solid var(--s-border);
+  border-radius: var(--r-md);
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.db-logout-btn:hover { border-color: var(--s-danger); color: var(--s-danger); }
 
 /* ─────────────── MAIN ─────────────── */
 .db-main {
   flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 40px 48px;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  padding: 36px 40px;
   gap: 28px;
 }
 
-/* ── Top Bar ── */
-.db-topbar {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
+/* ── Header ── */
+.db-header { display: flex; align-items: flex-end; justify-content: space-between; }
 .db-title {
   font-family: var(--f-serif);
   font-size: 2rem;
@@ -107,29 +121,7 @@
   letter-spacing: -0.4px;
   line-height: 1.1;
 }
-
-.db-sub {
-  margin-top: 4px;
-  font-size: 0.875rem;
-  color: var(--s-text-3);
-}
-
-.db-new-btn {
-  flex-shrink: 0;
-  background: var(--s-accent);
-  color: #fff;
-  border: none;
-  border-radius: var(--r-md);
-  padding: 11px 22px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  letter-spacing: 0.2px;
-  transition: background 0.2s, transform 0.15s;
-  white-space: nowrap;
-}
-.db-new-btn:hover { background: var(--s-accent-d); transform: translateY(-1px); }
-.db-new-btn:active { transform: translateY(0); }
+.db-sub { margin-top: 4px; font-size: 0.875rem; color: var(--s-text-3); }
 
 /* ── Stats Strip ── */
 .db-stats {
@@ -141,7 +133,6 @@
   border-radius: var(--r-lg);
   padding: 18px 28px;
 }
-
 .db-stat { display: flex; flex-direction: column; gap: 2px; }
 .db-stat-n {
   font-family: var(--f-serif);
@@ -150,7 +141,7 @@
   color: var(--s-text);
   letter-spacing: -0.3px;
 }
-.db-stat-l { font-size: 0.75rem; color: var(--s-text-3); text-transform: uppercase; letter-spacing: 0.8px; }
+.db-stat-l { font-size: 0.72rem; color: var(--s-text-3); text-transform: uppercase; letter-spacing: 0.8px; }
 .db-stat-div { width: 1px; height: 36px; background: var(--s-border); margin: 0 4px; }
 
 /* ── Empty State ── */
@@ -188,11 +179,11 @@
   border: 1.5px solid var(--s-border);
   border-radius: var(--r-lg);
   overflow: hidden;
-  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+  transition: box-shadow 0.25s, transform 0.25s, border-color 0.25s;
 }
 .db-card:hover {
   border-color: var(--s-accent);
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   box-shadow: var(--sh-lift);
 }
 
@@ -265,7 +256,7 @@
   font-weight: 500;
   cursor: pointer;
   padding: 7px 14px;
-  transition: all 0.15s;
+  transition: all 0.18s;
 }
 
 .db-act-edit {
@@ -283,4 +274,4 @@
   font-size: 1rem;
   padding: 7px 10px;
 }
-.db-act-del:hover { border-color: var(--s-danger); background: rgba(220,53,69,0.07); }
+.db-act-del:hover { border-color: var(--s-danger); background: rgba(192,57,43,0.07); }

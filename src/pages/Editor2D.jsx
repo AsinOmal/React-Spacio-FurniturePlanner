@@ -157,6 +157,9 @@ export default function Editor2D() {
   const [showLabels, setShowLabels] = useState(true)
   const [showGrid, setShowGrid] = useState(true)
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
+  const [stageScale, setStageScale] = useState(1)
+  const [stagePos, setStagePos] = useState({ x: 0, y: 0 })
+  const ZOOM_MIN = 0.4, ZOOM_MAX = 3, ZOOM_STEP = 1.12
 
   const toggleDark = () => {
     const next = !dark
@@ -212,6 +215,31 @@ export default function Editor2D() {
   const handlePropCommit = useCallback(() => {
     commitFurnitureHistory()
   }, [commitFurnitureHistory])
+
+  // ── Zoom (scroll wheel) ────────────────────────────
+  const handleWheel = useCallback((e) => {
+    e.evt.preventDefault()
+    const stage = stageRef.current
+    const oldScale = stage.scaleX()
+    const pointer = stage.getPointerPosition()
+    const direction = e.evt.deltaY < 0 ? 1 : -1
+    const newScale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, oldScale * (direction > 0 ? ZOOM_STEP : 1 / ZOOM_STEP)))
+    const mousePointTo = {
+      x: (pointer.x - stage.x()) / oldScale,
+      y: (pointer.y - stage.y()) / oldScale,
+    }
+    const newPos = {
+      x: pointer.x - mousePointTo.x * newScale,
+      y: pointer.y - mousePointTo.y * newScale,
+    }
+    setStageScale(newScale)
+    setStagePos(newPos)
+  }, [])
+
+  const resetZoom = useCallback(() => {
+    setStageScale(1)
+    setStagePos({ x: 0, y: 0 })
+  }, [])
 
   // ── Export PNG ───────────────────────────────────────────────
   const handleExport = useCallback(() => {
@@ -303,13 +331,20 @@ export default function Editor2D() {
         </div>
 
         {/* ── CENTRE: Canvas ────────────────────────────────── */}
-        <div className="canvas-area" style={{ touchAction: 'none' }}>
+        <div className="canvas-area" style={{ touchAction: 'none', position: 'relative' }}>
           <Stage
             ref={stageRef}
             width={cW}
             height={cH}
+            scaleX={stageScale}
+            scaleY={stageScale}
+            x={stagePos.x}
+            y={stagePos.y}
+            draggable
+            onWheel={handleWheel}
+            onDragEnd={e => setStagePos({ x: e.target.x(), y: e.target.y() })}
             onClick={e => { if (e.target === e.target.getStage()) setSelectedId(null) }}
-            style={{ background: 'white', borderRadius: 8, boxShadow: '0 4px 24px rgba(0,0,0,0.15)' }}
+            style={{ background: 'white', borderRadius: 8, boxShadow: '0 4px 24px rgba(0,0,0,0.15)', cursor: 'grab' }}
           >
             <Layer>
               {/* Floor */}
@@ -400,6 +435,15 @@ export default function Editor2D() {
               <Transformer ref={trRef} rotateEnabled boundBoxFunc={(_, n) => n} />
             </Layer>
           </Stage>
+
+          {/* Zoom HUD */}
+          <div className="zoom-hud">
+            <button className="zoom-btn" onClick={() => setStageScale(s => Math.min(ZOOM_MAX, s * ZOOM_STEP))}>+</button>
+            <span className="zoom-pct" onClick={resetZoom} title="Click to reset zoom">
+              {Math.round(stageScale * 100)}%
+            </span>
+            <button className="zoom-btn" onClick={() => setStageScale(s => Math.max(ZOOM_MIN, s / ZOOM_STEP))}>−</button>
+          </div>
         </div>
 
         {/* ── RIGHT: Properties ─────────────────────────────── */}
