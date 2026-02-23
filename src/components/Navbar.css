@@ -19,7 +19,7 @@
 .sp-logo {
   font-family: var(--f-serif);
   font-size: 1.6rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.5px;
   color: var(--s-text);
   cursor: pointer;
@@ -46,7 +46,7 @@
   transition: background 0.15s, color 0.15s;
 }
 .sp-nav-link:hover { color: var(--s-text); }
-.sp-nav-active { color: var(--s-accent) !important; font-weight: 600; }
+.sp-nav-active { color: var(--s-accent) !important; font-weight: 500; }
 
 .sp-nav-right {
   display: flex;

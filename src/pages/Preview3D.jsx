@@ -1,7 +1,8 @@
-import { Canvas } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { useNavigate } from 'react-router-dom'
 import { useDesign } from '../context/DesignContext'
+import { Home, Mouse } from 'lucide-react'
 import './Preview3D.css'
 
 const SCALE = 80
@@ -121,10 +122,13 @@ export default function Preview3D() {
           <span style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 18, fontWeight: 700, color: 'var(--s-text)' }}>Spacio</span>
         </div>
         <div className="topbar-title">
-          <span>🏠</span>
+          <Home size={16} strokeWidth={2.5} />
           <span>3D Room Preview</span>
         </div>
-        <div className="topbar-hint">🖱️ Drag to orbit · Scroll to zoom</div>
+        <div className="topbar-hint">
+          <Mouse size={14} strokeWidth={2.5} style={{ opacity: 0.7 }} />
+          <span>Drag to orbit · Scroll to zoom</span>
+        </div>
       </div>
 
       <div className="canvas3d">

@@ -369,8 +369,8 @@
 }
 .btn-remove:hover { background: var(--s-danger); color: white; border-color: var(--s-danger); }
 
-html.dark .btn-remove { background: #3b1a1a; border-color: #7f1d1d; }
-html.dark .btn-remove:hover { background: var(--s-danger); }
+html.dark .btn-remove { background: rgba(192, 57, 43, 0.15); color: #ff8a8a; border-color: rgba(192, 57, 43, 0.3); }
+html.dark .btn-remove:hover { background: var(--s-danger); color: #fff; }
 
 .no-sel {
   flex: 1;

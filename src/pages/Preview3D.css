@@ -10,22 +10,30 @@
 .preview-topbar {
   background: var(--s-surface);
   border-bottom: 1px solid var(--s-border);
-  padding: 0 24px;
-  height: 56px;
+  padding: 0 48px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  transition: background 0.3s, border-color 0.3s;
+}
+@media (max-width: 900px) {
+  .preview-topbar { padding: 18px 28px; }
 }
 
 .preview-topbar .topbar-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 10px;
   font-size: 15px;
   font-weight: 600;
   color: var(--s-text);
   font-family: var(--f-sans);
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .btn-back2d {
@@ -41,8 +49,12 @@
 .btn-back2d:hover { border-color: var(--s-accent); color: var(--s-accent); }
 
 .topbar-hint {
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
   color: var(--s-text-3);
+  font-weight: 500;
 }
 
 /* ── Canvas fills remaining space ── */

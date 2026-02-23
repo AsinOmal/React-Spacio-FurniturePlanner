@@ -178,7 +178,7 @@ export default function RoomSetup() {
               </div>
             </div>
 
-            <button type="submit" className="sp-btn sp-btn-primary rs-submit">
+            <button type="submit" className="btn-primary rs-submit">
               Continue to Editor →
             </button>
           </form>
