@@ -152,24 +152,39 @@ export default function Editor2D() {
   const [showLabels, setShowLabels] = useState(true)
   const [showGrid, setShowGrid] = useState(true)
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
-  const [stageScale, setStageScale] = useState(1.4)
-  const [stagePos, setStagePos] = useState({ x: 50, y: 50 })
+  const [stageScale, setStageScale] = useState(1)
+  const [stagePos, setStagePos] = useState({ x: 0, y: 0 })
   const ZOOM_MIN = 0.4, ZOOM_MAX = 3, ZOOM_STEP = 1.12
 
-  const [stageSize, setStageSize] = useState({ width: 800, height: 600 })
+  const cW = room.width * SCALE + PAD * 2
+  const cH = room.length * SCALE + PAD * 2
 
+  // Auto-fit to screen on load
   useEffect(() => {
     if (!containerRef.current) return
-    const updateSize = () => {
-      setStageSize({
-        width: containerRef.current.offsetWidth,
-        height: containerRef.current.offsetHeight
+    const fitScreen = () => {
+      const parentW = containerRef.current.offsetWidth
+      const parentH = containerRef.current.offsetHeight
+      // Leave 56px padding on all sides around the floor plan
+      const availW = parentW - 112
+      const availH = parentH - 112
+
+      const scaleX = availW / cW
+      const scaleY = availH / cH
+      // Fit to the most constrained dimension
+      const bestScale = Math.min(scaleX, scaleY, ZOOM_MAX)
+
+      setStageScale(bestScale)
+      // Center it
+      setStagePos({
+        x: (parentW - cW * bestScale) / 2,
+        y: (parentH - cH * bestScale) / 2
       })
     }
-    updateSize()
-    window.addEventListener('resize', updateSize)
-    return () => window.removeEventListener('resize', updateSize)
-  }, [])
+    fitScreen()
+    window.addEventListener('resize', fitScreen)
+    return () => window.removeEventListener('resize', fitScreen)
+  }, [cW, cH])
 
   const toggleDark = () => {
     const next = !dark
@@ -339,118 +354,116 @@ export default function Editor2D() {
         </div>
 
         {/* ── CENTRE: Canvas ────────────────────────────────── */}
-        <div className="canvas-area" style={{ touchAction: 'none', position: 'relative' }} ref={containerRef}>
-          <Stage
-            ref={stageRef}
-            width={stageSize.width}
-            height={stageSize.height}
-            scaleX={stageScale}
-            scaleY={stageScale}
-            x={stagePos.x}
-            y={stagePos.y}
-            draggable
-            onWheel={handleWheel}
-            onDragEnd={e => setStagePos({ x: e.target.x(), y: e.target.y() })}
-            onClick={e => { if (e.target === e.target.getStage()) setSelectedId(null) }}
-            style={{ background: 'white', borderRadius: 8, boxShadow: '0 4px 24px rgba(0,0,0,0.15)', cursor: 'grab' }}
-          >
-            <Layer>
-              {/* Floor */}
-              {isLShape ? (
-                lRects.map((r, i) => (
-                  <Rect key={i} x={r.x} y={r.y} width={r.w} height={r.h}
+        <div className="canvas-area" style={{ overflow: 'auto', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }} ref={containerRef}>
+          <div style={{ padding: '40px', minWidth: 'min-content', minHeight: 'min-content' }}>
+            <Stage
+              ref={stageRef}
+              width={cW * stageScale}
+              height={cH * stageScale}
+              scaleX={stageScale}
+              scaleY={stageScale}
+              onWheel={handleWheel}
+              onClick={e => { if (e.target === e.target.getStage()) setSelectedId(null) }}
+              style={{ background: 'white', borderRadius: 8, boxShadow: 'var(--sh-lift)' }}
+            >
+              <Layer>
+                {/* Floor */}
+                {isLShape ? (
+                  lRects.map((r, i) => (
+                    <Rect key={i} x={r.x} y={r.y} width={r.w} height={r.h}
+                      fill={room.floorColor} stroke={room.wallColor} strokeWidth={14} />
+                  ))
+                ) : (
+                  <Rect x={PAD} y={PAD}
+                    width={room.width * SCALE} height={room.length * SCALE}
                     fill={room.floorColor} stroke={room.wallColor} strokeWidth={14} />
-                ))
-              ) : (
-                <Rect x={PAD} y={PAD}
-                  width={room.width * SCALE} height={room.length * SCALE}
-                  fill={room.floorColor} stroke={room.wallColor} strokeWidth={14} />
-              )}
+                )}
 
-              {/* Floor grid overlay */}
-              {showGrid && (() => {
-                const lines = []
-                const steps = Math.round((room.width * SCALE) / GRID_PX)
-                const stepsH = Math.round((room.length * SCALE) / GRID_PX)
-                for (let i = 1; i < steps; i++) {
-                  const x = PAD + i * GRID_PX
-                  lines.push(
-                    <Line key={`gx-${i}`}
-                      points={[x, PAD, x, PAD + room.length * SCALE]}
-                      stroke="rgba(120,100,80,0.13)" strokeWidth={1} listening={false} />
-                  )
-                }
-                for (let j = 1; j < stepsH; j++) {
-                  const y = PAD + j * GRID_PX
-                  lines.push(
-                    <Line key={`gy-${j}`}
-                      points={[PAD, y, PAD + room.width * SCALE, y]}
-                      stroke="rgba(120,100,80,0.13)" strokeWidth={1} listening={false} />
-                  )
-                }
-                return lines
-              })()}
+                {/* Floor grid overlay */}
+                {showGrid && (() => {
+                  const lines = []
+                  const steps = Math.round((room.width * SCALE) / GRID_PX)
+                  const stepsH = Math.round((room.length * SCALE) / GRID_PX)
+                  for (let i = 1; i < steps; i++) {
+                    const x = PAD + i * GRID_PX
+                    lines.push(
+                      <Line key={`gx-${i}`}
+                        points={[x, PAD, x, PAD + room.length * SCALE]}
+                        stroke="rgba(120,100,80,0.13)" strokeWidth={1} listening={false} />
+                    )
+                  }
+                  for (let j = 1; j < stepsH; j++) {
+                    const y = PAD + j * GRID_PX
+                    lines.push(
+                      <Line key={`gy-${j}`}
+                        points={[PAD, y, PAD + room.width * SCALE, y]}
+                        stroke="rgba(120,100,80,0.13)" strokeWidth={1} listening={false} />
+                    )
+                  }
+                  return lines
+                })()}
 
-              {/* Measurement ruler lines */}
-              <MeasurementLines room={room} />
+                {/* Measurement ruler lines */}
+                <MeasurementLines room={room} />
 
-              {/* Furniture */}
-              {furniture.map(item => (
-                <Rect
-                  key={item.id}
-                  id={'item-' + item.id}
-                  x={item.x} y={item.y}
-                  width={item.width * SCALE * item.scale}
-                  height={item.height * SCALE * item.scale}
-                  fill={item.color}
-                  stroke={selectedId === item.id ? '#2563eb' : 'rgba(0,0,0,0.2)'}
-                  strokeWidth={selectedId === item.id ? 2.5 : 1}
-                  rotation={item.rotation}
-                  draggable
-                  cornerRadius={4}
-                  shadowColor="black"
-                  shadowBlur={selectedId === item.id ? 10 : 2}
-                  shadowOpacity={0.2}
-                  onClick={() => setSelectedId(item.id)}
-                  onTap={() => setSelectedId(item.id)}
-                  onDragEnd={e => handleDragEnd(item, e)}
-                />
-              ))}
-
-              {/* Labels — same pivot as rect: (item.x, item.y) */}
-              {showLabels && furniture.map(item => {
-                const iw = item.width * SCALE * item.scale
-                const ih = item.height * SCALE * item.scale
-                return (
-                  <Text
-                    key={'lbl-' + item.id}
-                    x={item.x}
-                    y={item.y}
-                    offsetX={0}
-                    offsetY={6 - ih / 2}
-                    width={iw}
-                    text={item.type}
-                    fontSize={11}
-                    fill="rgba(255,255,255,0.92)"
-                    align="center"
-                    listening={false}
+                {/* Furniture */}
+                {furniture.map(item => (
+                  <Rect
+                    key={item.id}
+                    id={'item-' + item.id}
+                    x={item.x} y={item.y}
+                    width={item.width * SCALE * item.scale}
+                    height={item.height * SCALE * item.scale}
+                    fill={item.color}
+                    stroke={selectedId === item.id ? '#2563eb' : 'rgba(0,0,0,0.2)'}
+                    strokeWidth={selectedId === item.id ? 2.5 : 1}
                     rotation={item.rotation}
-                    ellipsis
+                    draggable
+                    cornerRadius={4}
+                    shadowColor="black"
+                    shadowBlur={selectedId === item.id ? 10 : 2}
+                    shadowOpacity={0.2}
+                    onClick={() => setSelectedId(item.id)}
+                    onTap={() => setSelectedId(item.id)}
+                    onDragEnd={e => handleDragEnd(item, e)}
                   />
-                )
-              })}
+                ))}
 
-              <Transformer ref={trRef} rotateEnabled boundBoxFunc={(_, n) => n} />
-            </Layer>
-          </Stage>
+                {/* Labels — same pivot as rect: (item.x, item.y) */}
+                {showLabels && furniture.map(item => {
+                  const iw = item.width * SCALE * item.scale
+                  const ih = item.height * SCALE * item.scale
+                  return (
+                    <Text
+                      key={'lbl-' + item.id}
+                      x={item.x}
+                      y={item.y}
+                      offsetX={0}
+                      offsetY={6 - ih / 2}
+                      width={iw}
+                      text={item.type}
+                      fontSize={11}
+                      fill="rgba(255,255,255,0.92)"
+                      align="center"
+                      listening={false}
+                      rotation={item.rotation}
+                      ellipsis
+                    />
+                  )
+                })}
 
-          {/* Zoom HUD */}
-          <div className="zoom-hud">
-            <button className="zoom-btn" onClick={() => setStageScale(s => Math.min(ZOOM_MAX, s * ZOOM_STEP))}>+</button>
-            <span className="zoom-pct" onClick={resetZoom} title="Click to reset zoom">
-              {Math.round(stageScale * 100)}%
-            </span>
-            <button className="zoom-btn" onClick={() => setStageScale(s => Math.max(ZOOM_MIN, s / ZOOM_STEP))}>−</button>
+                <Transformer ref={trRef} rotateEnabled boundBoxFunc={(_, n) => n} />
+              </Layer>
+            </Stage>
+
+            {/* Zoom HUD */}
+            <div className="zoom-hud">
+              <button className="zoom-btn" onClick={() => setStageScale(s => Math.min(ZOOM_MAX, s * ZOOM_STEP))}>+</button>
+              <span className="zoom-pct" onClick={resetZoom} title="Click to reset zoom">
+                {Math.round(stageScale * 100)}%
+              </span>
+              <button className="zoom-btn" onClick={() => setStageScale(s => Math.max(ZOOM_MIN, s / ZOOM_STEP))}>−</button>
+            </div>
           </div>
         </div>
 
