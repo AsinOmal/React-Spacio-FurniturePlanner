@@ -45,48 +45,42 @@ function getLShapeRects(room) {
 }
 
 // ── Boundary clamp (rotation-aware) ─────────────────────────
-function getRotatedBBox(item) {
-  const iw = item.width * SCALE * item.scale
-  const ih = item.height * SCALE * item.scale
-  const rad = (item.rotation || 0) * Math.PI / 180
-  const cos = Math.abs(Math.cos(rad))
-  const sin = Math.abs(Math.sin(rad))
-  // Axis-aligned bounding box of the rotated rect
-  // Konva rotates around the item's top-left by default
-  return {
-    bw: iw * cos + ih * sin,
-    bh: iw * sin + ih * cos,
-    // offset from top-left to bounding box top-left
-    ox: iw / 2 * (1 - cos) + ih / 2 * sin - ih / 2 * sin,
-    oy: iw / 2 * sin - ih / 2 * (1 - cos) + ih / 2 * (1 - cos),
-  }
-}
-
 function clampToRoom(x, y, item, room) {
   const iw = item.width * SCALE * item.scale
   const ih = item.height * SCALE * item.scale
   const rad = (item.rotation || 0) * Math.PI / 180
-  const cos = Math.abs(Math.cos(rad))
-  const sin = Math.abs(Math.sin(rad))
-  // Full AABB dimensions after rotation
-  const bw = iw * cos + ih * sin
-  const bh = iw * sin + ih * cos
-  // Shift from item origin (top-left) to AABB top-left
-  const dx = (bw - iw) / 2
-  const dy = (bh - ih) / 2
 
+  // 4 corners relative to (0,0) of the item
+  const corners = [
+    { cx: 0, cy: 0 },
+    { cx: iw, cy: 0 },
+    { cx: iw, cy: ih },
+    { cx: 0, cy: ih }
+  ]
+
+  let minX = 0, maxX = 0, minY = 0, maxY = 0
+  corners.forEach(p => {
+    const rx = p.cx * Math.cos(rad) - p.cy * Math.sin(rad)
+    const ry = p.cx * Math.sin(rad) + p.cy * Math.cos(rad)
+    if (rx < minX) minX = rx
+    if (rx > maxX) maxX = rx
+    if (ry < minY) minY = ry
+    if (ry > maxY) maxY = ry
+  })
+
+  // The item's true bounding box spans [x + minX, x + maxX] and [y + minY, y + maxY]
   if (room.shape === 'L-Shape') {
     const [main, wing] = getLShapeRects(room)
-    const cy = y + ih / 2
-    const rect = cy > main.y + main.h ? wing : main
-    const cx = Math.max(rect.x + dx, Math.min(x, rect.x + rect.w - iw - dx))
-    const cy2 = Math.max(rect.y + dy, Math.min(y, rect.y + rect.h - ih - dy))
-    return { x: cx, y: cy2 }
+    const itemCenterY = y + ih / 2
+    const rect = itemCenterY > main.y + main.h ? wing : main
+    const cx = Math.max(rect.x - minX, Math.min(x, rect.x + rect.w - maxX))
+    const cy = Math.max(rect.y - minY, Math.min(y, rect.y + rect.h - maxY))
+    return { x: cx, y: cy }
   }
 
   return {
-    x: Math.max(PAD + dx, Math.min(x, PAD + room.width * SCALE - iw - dx)),
-    y: Math.max(PAD + dy, Math.min(y, PAD + room.length * SCALE - ih - dy)),
+    x: Math.max(PAD - minX, Math.min(x, PAD + room.width * SCALE - maxX)),
+    y: Math.max(PAD - minY, Math.min(y, PAD + room.length * SCALE - maxY)),
   }
 }
 
@@ -152,14 +146,30 @@ export default function Editor2D() {
 
   const stageRef = useRef()
   const trRef = useRef()
+  const containerRef = useRef()
   const [showSave, setShowSave] = useState(false)
   const [snapOn, setSnapOn] = useState(false)
   const [showLabels, setShowLabels] = useState(true)
   const [showGrid, setShowGrid] = useState(true)
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
-  const [stageScale, setStageScale] = useState(1)
-  const [stagePos, setStagePos] = useState({ x: 0, y: 0 })
+  const [stageScale, setStageScale] = useState(1.4)
+  const [stagePos, setStagePos] = useState({ x: 50, y: 50 })
   const ZOOM_MIN = 0.4, ZOOM_MAX = 3, ZOOM_STEP = 1.12
+
+  const [stageSize, setStageSize] = useState({ width: 800, height: 600 })
+
+  useEffect(() => {
+    if (!containerRef.current) return
+    const updateSize = () => {
+      setStageSize({
+        width: containerRef.current.offsetWidth,
+        height: containerRef.current.offsetHeight
+      })
+    }
+    updateSize()
+    window.addEventListener('resize', updateSize)
+    return () => window.removeEventListener('resize', updateSize)
+  }, [])
 
   const toggleDark = () => {
     const next = !dark
@@ -170,8 +180,6 @@ export default function Editor2D() {
 
   const isLShape = room.shape === 'L-Shape'
   const lRects = isLShape ? getLShapeRects(room) : []
-  const cW = room.width * SCALE + PAD * 2
-  const cH = room.length * SCALE + PAD * 2
   const selected = furniture.find(f => f.id === selectedId)
 
   // ── Transformer sync ─────────────────────────────────────────
@@ -331,11 +339,11 @@ export default function Editor2D() {
         </div>
 
         {/* ── CENTRE: Canvas ────────────────────────────────── */}
-        <div className="canvas-area" style={{ touchAction: 'none', position: 'relative' }}>
+        <div className="canvas-area" style={{ touchAction: 'none', position: 'relative' }} ref={containerRef}>
           <Stage
             ref={stageRef}
-            width={cW}
-            height={cH}
+            width={stageSize.width}
+            height={stageSize.height}
             scaleX={stageScale}
             scaleY={stageScale}
             x={stagePos.x}
