@@ -136,7 +136,7 @@
 .editor-body {
   flex: 1;
   display: grid;
-  grid-template-columns: 186px 1fr 230px;
+  grid-template-columns: 210px 1fr 230px;
   overflow: hidden;
 }
 
@@ -158,28 +158,42 @@
 }
 .lib-header span { font-size: 10.5px; color: var(--s-text-3); }
 
+.lib-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 2px 0;
+}
+
 .lib-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  width: 100%;
+  justify-content: center;
+  gap: 5px;
+  aspect-ratio: 1 / 1;
   background: var(--s-bg);
   border: 1.5px solid var(--s-border);
   border-radius: var(--r-md);
-  padding: 9px 10px;
-  margin-bottom: 6px;
+  padding: 8px 4px;
   transition: all 0.15s;
-  text-align: left;
+  text-align: center;
+  width: 100%;
 }
 .lib-item:hover {
   border-color: var(--s-accent);
   background: var(--s-glow);
 }
 
-.lib-emoji { font-size: 20px; }
-.lib-info { display: flex; flex-direction: column; gap: 1px; }
-.lib-name { font-size: 12.5px; font-weight: 600; color: var(--s-text); }
-.lib-size { font-size: 10px; color: var(--s-text-3); }
+.lib-emoji { font-size: 22px; line-height: 1; }
+.lib-name {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--s-text);
+  line-height: 1.2;
+  word-break: break-word;
+}
+.lib-size { font-size: 9.5px; color: var(--s-text-3); }
 
 /* ── Canvas Area ── */
 .canvas-area {

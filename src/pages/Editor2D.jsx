@@ -287,19 +287,19 @@ export default function Editor2D() {
             <h3>Furniture</h3>
             <span>click to add</span>
           </div>
-          {LIBRARY.map(item => (
-            <button
-              key={item.type}
-              className="lib-item"
-              onClick={() => addFurniture(item)}
-            >
-              <span className="lib-emoji">{item.emoji}</span>
-              <div className="lib-info">
+          <div className="lib-grid">
+            {LIBRARY.map(item => (
+              <button
+                key={item.type}
+                className="lib-item"
+                onClick={() => addFurniture(item)}
+              >
+                <span className="lib-emoji">{item.emoji}</span>
                 <span className="lib-name">{item.type}</span>
                 <span className="lib-size">{item.width}×{item.height}m</span>
-              </div>
-            </button>
-          ))}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* ── CENTRE: Canvas ────────────────────────────────── */}
