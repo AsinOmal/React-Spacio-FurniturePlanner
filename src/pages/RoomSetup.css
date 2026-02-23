@@ -1,0 +1,83 @@
+.roomsetup { min-height: 100vh; background: #f8fafc; }
+
+.page-header {
+  background: white;
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.page-header h1 { font-size: 20px; font-weight: 700; color: #1e293b; }
+
+.btn-back {
+  background: #f1f5f9; border: 1px solid #e2e8f0;
+  padding: 8px 16px; border-radius: 8px; font-size: 14px; color: #475569;
+}
+.btn-back:hover { background: #e2e8f0; }
+
+.roomsetup-main { padding: 40px 32px; display: flex; justify-content: center; }
+
+.setup-card {
+  background: white; border-radius: 12px; padding: 36px;
+  width: 100%; max-width: 600px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.setup-card h2 { font-size: 20px; font-weight: 700; color: #1e293b; margin-bottom: 28px; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+.form-group { display: flex; flex-direction: column; gap: 7px; margin-bottom: 22px; }
+
+.form-group label { font-size: 14px; font-weight: 600; color: #374151; }
+
+.form-group input[type="number"],
+.form-group select {
+  padding: 12px 14px; border: 1.5px solid #e2e8f0;
+  border-radius: 8px; font-size: 15px; outline: none; font-family: inherit;
+}
+
+.form-group input[type="number"]:focus,
+.form-group select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+
+.field-error { font-size: 12px; color: #dc2626; }
+
+.color-input {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;
+}
+
+.color-input input[type="color"] {
+  width: 40px; height: 36px; border: none;
+  border-radius: 6px; cursor: pointer; padding: 0;
+}
+
+.color-input span { font-size: 14px; color: #475569; }
+
+.room-preview { margin: 8px 0 24px; }
+
+.room-preview p { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 14px; }
+
+.preview-area {
+  background: #f1f5f9; border-radius: 10px; padding: 24px;
+  display: flex; justify-content: center; min-height: 160px; align-items: center;
+}
+
+.preview-box {
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; transition: all 0.3s; min-width: 80px; min-height: 60px;
+}
+
+.preview-box span { font-size: 13px; font-weight: 600; color: rgba(0,0,0,0.45); }
+
+.btn-continue {
+  width: 100%; background: #2563eb; color: white; border: none;
+  padding: 15px; border-radius: 8px; font-size: 16px; font-weight: 600;
+  transition: background 0.2s; font-family: inherit;
+}
+
+.btn-continue:hover { background: #1d4ed8; }
