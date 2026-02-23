@@ -155,6 +155,19 @@
 }
 .btn-ghost:hover { color: var(--c-accent); }
 
+.btn-ghost-sm {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--c-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+.btn-ghost-sm:hover { color: var(--c-accent); }
+
 /* ─────────────── HERO VISUAL ─────────────── */
 .hero-visual {
   display: flex;

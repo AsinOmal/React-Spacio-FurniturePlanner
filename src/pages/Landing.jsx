@@ -21,6 +21,7 @@ const FEATURES = [
 
 export default function Landing() {
   const navigate = useNavigate()
+  const loggedIn = localStorage.getItem('isLoggedIn') === 'true'
 
   return (
     <div className="landing">
@@ -28,9 +29,25 @@ export default function Landing() {
       {/* ── Navbar ── */}
       <nav className="landing-nav">
         <span className="landing-logo">Spacio</span>
-        <button className="btn-signin" onClick={() => navigate('/login')}>
-          Sign In
-        </button>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {loggedIn ? (
+            <>
+              <button className="btn-ghost-sm" onClick={() => navigate('/dashboard')}>
+                My Designs
+              </button>
+              <button className="btn-signin" onClick={() => {
+                localStorage.removeItem('isLoggedIn')
+                navigate('/')
+              }}>
+                Log Out
+              </button>
+            </>
+          ) : (
+            <button className="btn-signin" onClick={() => navigate('/login')}>
+              Sign In
+            </button>
+          )}
+        </div>
       </nav>
 
       {/* ── Hero ── */}
@@ -47,12 +64,25 @@ export default function Landing() {
             in minutes. No learning curve. No clutter.
           </p>
           <div className="hero-cta">
-            <button className="btn-primary" onClick={() => navigate('/login')}>
-              Start Designing
-            </button>
-            <button className="btn-ghost" onClick={() => navigate('/login')}>
-              View my designs →
-            </button>
+            {loggedIn ? (
+              <>
+                <button className="btn-primary" onClick={() => navigate('/dashboard')}>
+                  View My Designs →
+                </button>
+                <button className="btn-ghost" onClick={() => navigate('/room-setup')}>
+                  Start New Design
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="btn-primary" onClick={() => navigate('/login')}>
+                  Start Designing
+                </button>
+                <button className="btn-ghost" onClick={() => navigate('/login')}>
+                  Sign In →
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -96,9 +126,13 @@ export default function Landing() {
       {/* ── CTA Banner ── */}
       <section className="cta-banner">
         <h2 className="cta-title">Your next space starts here.</h2>
-        <p className="cta-sub">Sign in and start your first design in under a minute.</p>
-        <button className="btn-primary" onClick={() => navigate('/login')}>
-          Open Spacio
+        <p className="cta-sub">
+          {loggedIn
+            ? 'Continue where you left off, or start something new.'
+            : 'Sign in and start your first design in under a minute.'}
+        </p>
+        <button className="btn-primary" onClick={() => navigate(loggedIn ? '/dashboard' : '/login')}>
+          {loggedIn ? 'Go to My Designs' : 'Open Spacio'}
         </button>
       </section>
 
