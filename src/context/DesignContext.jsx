@@ -19,7 +19,11 @@ export function DesignProvider({ children }) {
   })
 
   useEffect(() => {
-    localStorage.setItem('savedDesigns', JSON.stringify(savedDesigns))
+    try {
+      localStorage.setItem('savedDesigns', JSON.stringify(savedDesigns))
+    } catch (e) {
+      console.warn('Spacio: could not save designs to localStorage', e)
+    }
   }, [savedDesigns])
 
   const saveDesign = (name) => {

@@ -7,50 +7,108 @@ import './Preview3D.css'
 const SCALE = 80
 const PAD = 40
 
+// ── Per-type heights for varied 3D appearance ──────────────────
+const TYPE_HEIGHTS = {
+  'Chair': 0.9,
+  'Dining Table': 0.75,
+  'Sofa': 0.85,
+  'Bed': 0.55,
+  'Side Table': 0.55,
+  'Wardrobe': 1.85,
+  'Desk': 0.75,
+  'Bookshelf': 1.8,
+}
+
+// ── L-Shape helper (mirrors Editor2D logic) ────────────────────
+function getLShapeRects3D(room) {
+  const fullW = room.width
+  const fullD = room.length
+  const mainD = fullD * 0.6
+  const wingD = fullD - mainD
+  const wingW = fullW * 0.5
+  return [
+    { x: 0, z: 0, w: fullW, d: mainD }, // main bar
+    { x: 0, z: mainD, w: wingW, d: wingD }, // left wing
+  ]
+}
+
+// ── Room component ─────────────────────────────────────────────
 function Room({ room }) {
   const w = room.width
   const d = room.length
   const h = 2.8
+  const isLShape = room.shape === 'L-Shape'
+
   return (
     <group>
-      {/* Floor */}
-      <mesh position={[w/2, 0, d/2]} rotation={[-Math.PI/2, 0, 0]} receiveShadow>
-        <planeGeometry args={[w, d]} />
-        <meshStandardMaterial color={room.floorColor} />
-      </mesh>
+      {/* Floor(s) */}
+      {isLShape ? (
+        getLShapeRects3D(room).map((r, i) => (
+          <mesh key={i} position={[r.x + r.w / 2, 0, r.z + r.d / 2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+            <planeGeometry args={[r.w, r.d]} />
+            <meshStandardMaterial color={room.floorColor} />
+          </mesh>
+        ))
+      ) : (
+        <mesh position={[w / 2, 0, d / 2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+          <planeGeometry args={[w, d]} />
+          <meshStandardMaterial color={room.floorColor} />
+        </mesh>
+      )}
+
       {/* Back wall */}
-      <mesh position={[w/2, h/2, 0]}>
+      <mesh position={[w / 2, h / 2, 0]}>
         <boxGeometry args={[w, h, 0.08]} />
         <meshStandardMaterial color={room.wallColor} />
       </mesh>
+
       {/* Left wall */}
-      <mesh position={[0, h/2, d/2]}>
+      <mesh position={[0, h / 2, d / 2]}>
         <boxGeometry args={[0.08, h, d]} />
         <meshStandardMaterial color={room.wallColor} />
       </mesh>
+
       {/* Right wall */}
-      <mesh position={[w, h/2, d/2]}>
+      <mesh position={[w, h / 2, d / 2]}>
         <boxGeometry args={[0.08, h, d]} />
         <meshStandardMaterial color={room.wallColor} />
+      </mesh>
+
+      {/* Ceiling */}
+      <mesh position={[w / 2, h, d / 2]} rotation={[Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[w, d]} />
+        <meshStandardMaterial color={room.wallColor} opacity={0.35} transparent />
       </mesh>
     </group>
   )
 }
 
+// ── Furniture piece component ──────────────────────────────────
 function FurniturePiece({ item }) {
-  const w = item.width  * item.scale
-  const d = item.height * item.scale
-  const h = 0.5 * item.scale
+  const fw = item.width * item.scale
+  const fd = item.height * item.scale
+  const fh = (TYPE_HEIGHTS[item.type] ?? 0.6) * item.scale
+
+  // Convert 2D canvas position to 3D world coords
   const x = (item.x - PAD) / SCALE
   const z = (item.y - PAD) / SCALE
+
+  // Convert 2D rotation (degrees) to 3D Y-axis rotation (radians)
+  const rotY = -(item.rotation * Math.PI) / 180
+
   return (
-    <mesh position={[x + w/2, h/2, z + d/2]} castShadow>
-      <boxGeometry args={[w, h, d]} />
+    <mesh
+      position={[x + fw / 2, fh / 2, z + fd / 2]}
+      rotation={[0, rotY, 0]}
+      castShadow
+    >
+      <boxGeometry args={[fw, fh, fd]} />
       <meshStandardMaterial color={item.color} />
     </mesh>
   )
 }
 
+// ── Main Page ──────────────────────────────────────────────────
 export default function Preview3D() {
   const navigate = useNavigate()
   const { room, furniture } = useDesign()
@@ -79,7 +137,7 @@ export default function Preview3D() {
             castShadow
             shadow-mapSize={[2048, 2048]}
           />
-          <pointLight position={[room.width/2, 2.5, room.length/2]} intensity={0.4} />
+          <pointLight position={[room.width / 2, 2.5, room.length / 2]} intensity={0.4} />
 
           <Room room={room} />
           {furniture.map(item => (
@@ -87,7 +145,7 @@ export default function Preview3D() {
           ))}
 
           <OrbitControls
-            target={[room.width/2, 0.5, room.length/2]}
+            target={[room.width / 2, 0.5, room.length / 2]}
             maxPolarAngle={Math.PI / 2.1}
             minDistance={1}
             maxDistance={20}
@@ -96,7 +154,7 @@ export default function Preview3D() {
       </div>
 
       <div className="info-bar">
-        <span>Room: {room.width}m × {room.length}m</span>
+        <span>Room: {room.width}m × {room.length}m{room.shape === 'L-Shape' ? ' (L-Shape)' : ''}</span>
         <span>·</span>
         <span>{furniture.length} furniture item{furniture.length !== 1 ? 's' : ''}</span>
         <span>·</span>
