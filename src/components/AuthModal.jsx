@@ -18,6 +18,7 @@ export default function AuthModal({ isOpen, onClose, initialView = 'choice' }) {
         e.preventDefault()
         if (username === 'designer' && password === 'furniture123') {
             localStorage.setItem('isLoggedIn', 'true')
+            localStorage.removeItem('isGuest')   // guest → full user
             onClose()
             navigate('/dashboard')
         } else {
@@ -26,6 +27,7 @@ export default function AuthModal({ isOpen, onClose, initialView = 'choice' }) {
     }
 
     const handleGuest = () => {
+        localStorage.setItem('isGuest', 'true')
         setRoom({ width: 4, length: 3, shape: 'Rectangle', wallColor: '#F5F5DC', floorColor: '#D2B48C' })
         setFurniture([])
         onClose()

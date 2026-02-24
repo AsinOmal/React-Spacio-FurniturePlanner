@@ -7,9 +7,17 @@ import RoomSetup from './pages/RoomSetup'
 import Editor2D from './pages/Editor2D'
 import Preview3D from './pages/Preview3D'
 
+// Requires full login (Dashboard)
 function PrivateRoute({ children }) {
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
   return isLoggedIn ? children : <Navigate to="/" />
+}
+
+// Allows guests and logged-in users (Room Setup, Editor, 3D)
+function DesignRoute({ children }) {
+  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
+  const isGuest = localStorage.getItem('isGuest') === 'true'
+  return (isLoggedIn || isGuest) ? children : <Navigate to="/" />
 }
 
 export default function App() {
@@ -20,9 +28,9 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/room-setup" element={<PrivateRoute><RoomSetup /></PrivateRoute>} />
-          <Route path="/editor" element={<PrivateRoute><Editor2D /></PrivateRoute>} />
-          <Route path="/preview3d" element={<PrivateRoute><Preview3D /></PrivateRoute>} />
+          <Route path="/room-setup" element={<DesignRoute><RoomSetup /></DesignRoute>} />
+          <Route path="/editor" element={<DesignRoute><Editor2D /></DesignRoute>} />
+          <Route path="/preview3d" element={<DesignRoute><Preview3D /></DesignRoute>} />
         </Routes>
       </BrowserRouter>
     </DesignProvider>

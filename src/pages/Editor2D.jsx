@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Stage, Layer, Rect, Line, Text, Transformer } from 'react-konva'
 import { useDesign } from '../context/DesignContext'
 import SaveModal from '../components/SaveModal'
+import AuthModal from '../components/AuthModal'
 import {
   ArrowLeft, Sun, Moon, Save, Box,
   Undo2, Redo2, Maximize, Grid3x3, Tags, Download,
@@ -137,6 +138,8 @@ export default function Editor2D() {
   const trRef = useRef()
   const containerRef = useRef()
   const [showSave, setShowSave] = useState(false)
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const isGuest = localStorage.getItem('isGuest') === 'true'
   const [snapOn, setSnapOn] = useState(false)
   const [showLabels, setShowLabels] = useState(true)
   const [showGrid, setShowGrid] = useState(true)
@@ -289,11 +292,28 @@ export default function Editor2D() {
 
   return (
     <div className="editor">
+      {/* Guest mode banner */}
+      {isGuest && (
+        <div style={{
+          background: 'linear-gradient(90deg, #f59e0b, #f97316)',
+          color: '#fff',
+          textAlign: 'center',
+          fontSize: 13,
+          fontWeight: 600,
+          padding: '6px 16px',
+          letterSpacing: '0.01em',
+        }}>
+          👋 Guest Mode — design freely! <button
+            onClick={() => setShowLoginPrompt(true)}
+            style={{ background: 'rgba(255,255,255,0.25)', border: 'none', borderRadius: 6, color: '#fff', fontWeight: 700, cursor: 'pointer', padding: '2px 10px', marginLeft: 8 }}
+          >Log in to Save</button>
+        </div>
+      )}
       {/* ── Top Bar ─────────────────────────────────────────── */}
       <div className="editor-topbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => navigate('/dashboard')} className="btn-topbar">
-            <ArrowLeft size={16} /> Dashboard
+          <button onClick={() => navigate(isGuest ? '/' : '/dashboard')} className="btn-topbar">
+            <ArrowLeft size={16} /> {isGuest ? 'Home' : 'Dashboard'}
           </button>
           <span className="topbar-logo">Spacio</span>
         </div>
@@ -305,7 +325,11 @@ export default function Editor2D() {
           <button className="sp-dark-toggle" onClick={toggleDark} title="Dark mode">
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <button onClick={() => setShowSave(true)} className="btn-save">
+          <button
+            onClick={() => isGuest ? setShowLoginPrompt(true) : setShowSave(true)}
+            className="btn-save"
+            title={isGuest ? 'Log in to save your design' : 'Save design'}
+          >
             <Save size={15} /> Save
           </button>
           <button onClick={() => navigate('/preview3d')} className="btn-3d">
@@ -563,6 +587,13 @@ export default function Editor2D() {
           onCancel={() => setShowSave(false)}
         />
       )}
+
+      {/* Login prompt for guests trying to Save */}
+      <AuthModal
+        isOpen={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+        initialView="login"
+      />
     </div>
   )
 }

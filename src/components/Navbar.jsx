@@ -28,6 +28,7 @@ export default function Navbar() {
 
     const handleLogout = () => {
         localStorage.removeItem('isLoggedIn')
+        localStorage.removeItem('isGuest')
         navigate('/')
     }
 
