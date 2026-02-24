@@ -494,7 +494,7 @@ export default function Preview3D() {
       <div className="canvas3d">
         <Canvas
           shadows
-          camera={{ position: [room.width / 2, room.length * 0.85, room.length * 1.6], fov: 52 }}
+          camera={{ position: [room.width / 2, room.length * 1.4, room.length * 2.4], fov: 52 }}
           style={{ background: 'linear-gradient(180deg, #c9dde8 0%, #e8eff4 100%)' }}
         >
           <ambientLight intensity={0.55} />
