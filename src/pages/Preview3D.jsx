@@ -1,4 +1,4 @@
-import { useFrame } from '@react-three/fiber'
+import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { useNavigate } from 'react-router-dom'
 import { useDesign } from '../context/DesignContext'
