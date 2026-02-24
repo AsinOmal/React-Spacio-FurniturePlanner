@@ -8,19 +8,7 @@ import './Preview3D.css'
 const SCALE = 80
 const PAD = 40
 
-// ── Per-type heights for varied 3D appearance ──────────────────
-const TYPE_HEIGHTS = {
-  'Chair': 0.9,
-  'Dining Table': 0.75,
-  'Sofa': 0.85,
-  'Bed': 0.55,
-  'Side Table': 0.55,
-  'Wardrobe': 1.85,
-  'Desk': 0.75,
-  'Bookshelf': 1.8,
-}
-
-// ── L-Shape helper (mirrors Editor2D logic) ────────────────────
+// ── L-Shape helper ─────────────────────────────────────────────
 function getLShapeRects3D(room) {
   const fullW = room.width
   const fullD = room.length
@@ -28,9 +16,411 @@ function getLShapeRects3D(room) {
   const wingD = fullD - mainD
   const wingW = fullW * 0.5
   return [
-    { x: 0, z: 0, w: fullW, d: mainD }, // main bar
-    { x: 0, z: mainD, w: wingW, d: wingD }, // left wing
+    { x: 0, z: 0, w: fullW, d: mainD },
+    { x: 0, z: mainD, w: wingW, d: wingD },
   ]
+}
+
+// ── Shared material helper ──────────────────────────────────────
+function Mat({ color, roughness = 0.6, metalness = 0.05 }) {
+  return <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} />
+}
+
+// ── Shared leg helper (thin box leg) ───────────────────────────
+function Leg({ x, z, h, r = 0.035, color }) {
+  return (
+    <mesh position={[x, h / 2, z]} castShadow>
+      <boxGeometry args={[r, h, r]} />
+      <Mat color={color} roughness={0.8} />
+    </mesh>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// CHAIR — seat + 4 legs + backrest
+// ══════════════════════════════════════════════════════════════
+function Chair3D({ fw, fd, fh, color }) {
+  const legH = fh * 0.52
+  const seatY = legH
+  const seatT = fh * 0.1
+  const backH = fh * 0.52
+  const legInset = 0.04
+  const darkColor = shadeColor(color, -30)
+
+  return (
+    <group>
+      {/* Seat */}
+      <mesh position={[0, seatY + seatT / 2, 0]} castShadow>
+        <boxGeometry args={[fw, seatT, fd * 0.65]} />
+        <Mat color={color} roughness={0.7} />
+      </mesh>
+      {/* Backrest */}
+      <mesh position={[0, seatY + backH / 2, -fd * 0.3]} castShadow>
+        <boxGeometry args={[fw * 0.9, backH, fd * 0.1]} />
+        <Mat color={color} roughness={0.7} />
+      </mesh>
+      {/* 4 legs */}
+      <Leg x={-fw / 2 + legInset} z={-fd * 0.28} h={legH} color={darkColor} />
+      <Leg x={fw / 2 - legInset} z={-fd * 0.28} h={legH} color={darkColor} />
+      <Leg x={-fw / 2 + legInset} z={fd * 0.28} h={legH} color={darkColor} />
+      <Leg x={fw / 2 - legInset} z={fd * 0.28} h={legH} color={darkColor} />
+    </group>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// DINING TABLE — flat top + 4 legs
+// ══════════════════════════════════════════════════════════════
+function DiningTable3D({ fw, fd, fh, color }) {
+  const legH = fh * 0.9
+  const topT = fh * 0.07
+  const legInset = 0.06
+  const darkColor = shadeColor(color, -25)
+
+  return (
+    <group>
+      {/* Tabletop */}
+      <mesh position={[0, fh - topT / 2, 0]} castShadow>
+        <boxGeometry args={[fw, topT, fd]} />
+        <Mat color={color} roughness={0.5} />
+      </mesh>
+      {/* 4 Legs */}
+      <Leg x={-fw / 2 + legInset} z={-fd / 2 + legInset} h={legH} color={darkColor} />
+      <Leg x={fw / 2 - legInset} z={-fd / 2 + legInset} h={legH} color={darkColor} />
+      <Leg x={-fw / 2 + legInset} z={fd / 2 - legInset} h={legH} color={darkColor} />
+      <Leg x={fw / 2 - legInset} z={fd / 2 - legInset} h={legH} color={darkColor} />
+    </group>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// SOFA — base + backrest + 2 armrests + cushions
+// ══════════════════════════════════════════════════════════════
+function Sofa3D({ fw, fd, fh, color }) {
+  const baseH = fh * 0.38
+  const backH = fh * 0.55
+  const armH = fh * 0.46
+  const armW = fw * 0.1
+  const cushionH = baseH * 0.18
+  const cushionColor = shadeColor(color, 15)
+  const darkColor = shadeColor(color, -20)
+
+  return (
+    <group>
+      {/* Base/seat */}
+      <mesh position={[0, baseH / 2, fd * 0.1]} castShadow>
+        <boxGeometry args={[fw * 0.8, baseH, fd * 0.6]} />
+        <Mat color={color} roughness={0.8} />
+      </mesh>
+      {/* Backrest */}
+      <mesh position={[0, baseH + backH / 2, -fd * 0.28]} castShadow>
+        <boxGeometry args={[fw * 0.8, backH, fd * 0.18]} />
+        <Mat color={color} roughness={0.8} />
+      </mesh>
+      {/* Left armrest */}
+      <mesh position={[-fw / 2 + armW / 2, armH / 2, fd * 0.05]} castShadow>
+        <boxGeometry args={[armW, armH, fd * 0.78]} />
+        <Mat color={darkColor} roughness={0.8} />
+      </mesh>
+      {/* Right armrest */}
+      <mesh position={[fw / 2 - armW / 2, armH / 2, fd * 0.05]} castShadow>
+        <boxGeometry args={[armW, armH, fd * 0.78]} />
+        <Mat color={darkColor} roughness={0.8} />
+      </mesh>
+      {/* Cushions (3 across) */}
+      {[-1, 0, 1].map(i => (
+        <mesh key={i} position={[i * fw * 0.24, baseH + cushionH / 2, fd * 0.12]} castShadow>
+          <boxGeometry args={[fw * 0.23, cushionH, fd * 0.5]} />
+          <Mat color={cushionColor} roughness={0.9} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// BED — frame + mattress + headboard + pillow
+// ══════════════════════════════════════════════════════════════
+function Bed3D({ fw, fd, fh, color }) {
+  const frameH = fh * 0.12
+  const mattressH = fh * 0.22
+  const headH = fh
+  const pillowColor = '#f5f0e8'
+  const mattressColor = shadeColor(color, 20)
+  const darkColor = shadeColor(color, -20)
+
+  return (
+    <group>
+      {/* Bed frame base */}
+      <mesh position={[0, frameH / 2, 0]} castShadow>
+        <boxGeometry args={[fw, frameH, fd]} />
+        <Mat color={darkColor} roughness={0.7} />
+      </mesh>
+      {/* Mattress */}
+      <mesh position={[0, frameH + mattressH / 2, fd * 0.05]} castShadow>
+        <boxGeometry args={[fw * 0.92, mattressH, fd * 0.82]} />
+        <Mat color={mattressColor} roughness={0.9} />
+      </mesh>
+      {/* Headboard */}
+      <mesh position={[0, headH / 2, -fd * 0.44]} castShadow>
+        <boxGeometry args={[fw, headH, fd * 0.1]} />
+        <Mat color={color} roughness={0.6} />
+      </mesh>
+      {/* Footboard */}
+      <mesh position={[0, frameH * 2, fd * 0.46]} castShadow>
+        <boxGeometry args={[fw, frameH * 2.5, fd * 0.06]} />
+        <Mat color={darkColor} roughness={0.7} />
+      </mesh>
+      {/* Pillows (2) */}
+      {[-1, 1].map(side => (
+        <mesh key={side} position={[side * fw * 0.22, frameH + mattressH + 0.04, -fd * 0.28]} castShadow>
+          <boxGeometry args={[fw * 0.38, 0.08, fd * 0.22]} />
+          <Mat color={pillowColor} roughness={1.0} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// SIDE TABLE — small top + 4 thin legs
+// ══════════════════════════════════════════════════════════════
+function SideTable3D({ fw, fd, fh, color }) {
+  const legH = fh * 0.85
+  const topT = fh * 0.08
+  const legInset = 0.03
+  const darkColor = shadeColor(color, -20)
+
+  return (
+    <group>
+      {/* Top */}
+      <mesh position={[0, fh - topT / 2, 0]} castShadow>
+        <boxGeometry args={[fw, topT, fd]} />
+        <Mat color={color} roughness={0.5} metalness={0.1} />
+      </mesh>
+      {/* Shelf (middle) */}
+      <mesh position={[0, fh * 0.42, 0]} castShadow>
+        <boxGeometry args={[fw * 0.85, topT * 0.7, fd * 0.85]} />
+        <Mat color={color} roughness={0.5} />
+      </mesh>
+      {/* 4 thin legs */}
+      <Leg x={-fw / 2 + legInset} z={-fd / 2 + legInset} h={legH} r={0.025} color={darkColor} />
+      <Leg x={fw / 2 - legInset} z={-fd / 2 + legInset} h={legH} r={0.025} color={darkColor} />
+      <Leg x={-fw / 2 + legInset} z={fd / 2 - legInset} h={legH} r={0.025} color={darkColor} />
+      <Leg x={fw / 2 - legInset} z={fd / 2 - legInset} h={legH} r={0.025} color={darkColor} />
+    </group>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// WARDROBE — tall body + door panels + handles
+// ══════════════════════════════════════════════════════════════
+function Wardrobe3D({ fw, fd, fh, color }) {
+  const panelColor = shadeColor(color, 10)
+  const handleColor = '#888'
+  const darkColor = shadeColor(color, -20)
+
+  return (
+    <group>
+      {/* Main body */}
+      <mesh position={[0, fh / 2, 0]} castShadow>
+        <boxGeometry args={[fw, fh, fd]} />
+        <Mat color={color} roughness={0.5} />
+      </mesh>
+      {/* Left door panel */}
+      <mesh position={[-fw * 0.25, fh / 2, fd / 2 + 0.01]}>
+        <boxGeometry args={[fw * 0.46, fh * 0.96, 0.02]} />
+        <Mat color={panelColor} roughness={0.4} />
+      </mesh>
+      {/* Right door panel */}
+      <mesh position={[fw * 0.25, fh / 2, fd / 2 + 0.01]}>
+        <boxGeometry args={[fw * 0.46, fh * 0.96, 0.02]} />
+        <Mat color={panelColor} roughness={0.4} />
+      </mesh>
+      {/* Centre seam */}
+      <mesh position={[0, fh / 2, fd / 2 + 0.015]}>
+        <boxGeometry args={[0.015, fh * 0.96, 0.025]} />
+        <Mat color={darkColor} roughness={0.4} />
+      </mesh>
+      {/* Left door handle */}
+      <mesh position={[-fw * 0.07, fh * 0.5, fd / 2 + 0.03]}>
+        <boxGeometry args={[0.04, 0.12, 0.03]} />
+        <Mat color={handleColor} roughness={0.3} metalness={0.6} />
+      </mesh>
+      {/* Right door handle */}
+      <mesh position={[fw * 0.07, fh * 0.5, fd / 2 + 0.03]}>
+        <boxGeometry args={[0.04, 0.12, 0.03]} />
+        <Mat color={handleColor} roughness={0.3} metalness={0.6} />
+      </mesh>
+    </group>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// DESK — worktop + 2 legs + side pedestal
+// ══════════════════════════════════════════════════════════════
+function Desk3D({ fw, fd, fh, color }) {
+  const topT = fh * 0.07
+  const legH = fh - topT
+  const darkColor = shadeColor(color, -20)
+  const drawerColor = shadeColor(color, -10)
+
+  return (
+    <group>
+      {/* Worktop */}
+      <mesh position={[0, fh - topT / 2, 0]} castShadow>
+        <boxGeometry args={[fw, topT, fd]} />
+        <Mat color={color} roughness={0.45} />
+      </mesh>
+      {/* Right pedestal (drawer unit) */}
+      <mesh position={[fw * 0.38, legH / 2, 0]} castShadow>
+        <boxGeometry args={[fw * 0.22, legH, fd * 0.9]} />
+        <Mat color={drawerColor} roughness={0.55} />
+      </mesh>
+      {/* 2 drawer lines */}
+      {[0.25, 0.55].map((yf, i) => (
+        <mesh key={i} position={[fw * 0.38, legH * yf, fd / 2 + 0.005]}>
+          <boxGeometry args={[fw * 0.18, 0.01, 0.01]} />
+          <Mat color={darkColor} />
+        </mesh>
+      ))}
+      {/* Left leg */}
+      <Leg x={-fw * 0.42} z={0} h={legH} r={0.05} color={darkColor} />
+    </group>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// BOOKSHELF — frame + 4 shelves + book spines
+// ══════════════════════════════════════════════════════════════
+function Bookshelf3D({ fw, fd, fh, color }) {
+  const boardT = 0.04
+  const darkColor = shadeColor(color, -25)
+  const shelfCount = 4
+  const bookColors = ['#b5451b', '#2e6b9c', '#2d7a45', '#8b5e13', '#6b2d8b', '#1a5c7a']
+
+  return (
+    <group>
+      {/* Back panel */}
+      <mesh position={[0, fh / 2, -fd / 2 + 0.01]} castShadow>
+        <boxGeometry args={[fw, fh, boardT]} />
+        <Mat color={darkColor} roughness={0.8} />
+      </mesh>
+      {/* Left side */}
+      <mesh position={[-fw / 2 + boardT / 2, fh / 2, 0]} castShadow>
+        <boxGeometry args={[boardT, fh, fd]} />
+        <Mat color={color} roughness={0.6} />
+      </mesh>
+      {/* Right side */}
+      <mesh position={[fw / 2 - boardT / 2, fh / 2, 0]} castShadow>
+        <boxGeometry args={[boardT, fh, fd]} />
+        <Mat color={color} roughness={0.6} />
+      </mesh>
+      {/* Top */}
+      <mesh position={[0, fh - boardT / 2, 0]} castShadow>
+        <boxGeometry args={[fw, boardT, fd]} />
+        <Mat color={color} roughness={0.6} />
+      </mesh>
+      {/* Bottom */}
+      <mesh position={[0, boardT / 2, 0]} castShadow>
+        <boxGeometry args={[fw, boardT, fd]} />
+        <Mat color={color} roughness={0.6} />
+      </mesh>
+      {/* Shelves */}
+      {Array.from({ length: shelfCount }).map((_, i) => {
+        const shelfY = (fh / (shelfCount + 1)) * (i + 1)
+        return (
+          <mesh key={i} position={[0, shelfY, 0]} castShadow>
+            <boxGeometry args={[fw - boardT * 2, boardT, fd]} />
+            <Mat color={color} roughness={0.6} />
+          </mesh>
+        )
+      })}
+      {/* Books on each shelf */}
+      {Array.from({ length: shelfCount }).map((_, si) => {
+        const shelfY = (fh / (shelfCount + 1)) * (si + 1)
+        let xCursor = -fw / 2 + boardT + 0.03
+        const books = []
+        let bi = 0
+        while (xCursor < fw / 2 - boardT - 0.05) {
+          const bw = 0.04 + Math.random() * 0.04
+          const bh = 0.1 + Math.random() * 0.12
+          books.push(
+            <mesh key={bi++} position={[xCursor + bw / 2, shelfY + boardT / 2 + bh / 2, 0]} castShadow>
+              <boxGeometry args={[bw, bh, fd * 0.75]} />
+              <Mat color={bookColors[(si * 4 + bi) % bookColors.length]} roughness={0.9} />
+            </mesh>
+          )
+          xCursor += bw + 0.01
+        }
+        return books
+      })}
+    </group>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// Utility: lighten/darken a hex colour
+// ══════════════════════════════════════════════════════════════
+function shadeColor(hex, amount) {
+  let col = hex.replace('#', '')
+  if (col.length === 3) col = col.split('').map(c => c + c).join('')
+  const num = parseInt(col, 16)
+  const r = Math.min(255, Math.max(0, (num >> 16) + amount))
+  const g = Math.min(255, Math.max(0, ((num >> 8) & 0xff) + amount))
+  const b = Math.min(255, Math.max(0, (num & 0xff) + amount))
+  return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`
+}
+
+// ══════════════════════════════════════════════════════════════
+// Dispatcher — picks the right component per type
+// ══════════════════════════════════════════════════════════════
+const TYPE_HEIGHTS = {
+  'Chair': 0.9,
+  'Dining Table': 0.80,
+  'Sofa': 0.95,
+  'Bed': 0.70,
+  'Side Table': 0.60,
+  'Wardrobe': 1.85,
+  'Desk': 0.80,
+  'Bookshelf': 1.80,
+}
+
+function FurniturePiece({ item }) {
+  const fw = item.width * item.scale
+  const fd = item.height * item.scale
+  const fh = (TYPE_HEIGHTS[item.type] ?? 0.7) * item.scale
+
+  const x = (item.x - PAD) / SCALE
+  const z = (item.y - PAD) / SCALE
+  const rotY = -(item.rotation * Math.PI) / 180
+
+  // Each furniture function renders in LOCAL space, centred at 0,0,0, from y=0 up
+  const props = { fw, fd, fh, color: item.color }
+  let Shape
+  switch (item.type) {
+    case 'Chair': Shape = <Chair3D        {...props} />; break
+    case 'Dining Table': Shape = <DiningTable3D  {...props} />; break
+    case 'Sofa': Shape = <Sofa3D         {...props} />; break
+    case 'Bed': Shape = <Bed3D          {...props} />; break
+    case 'Side Table': Shape = <SideTable3D    {...props} />; break
+    case 'Wardrobe': Shape = <Wardrobe3D     {...props} />; break
+    case 'Desk': Shape = <Desk3D         {...props} />; break
+    case 'Bookshelf': Shape = <Bookshelf3D    {...props} />; break
+    default:
+      Shape = (
+        <mesh castShadow>
+          <boxGeometry args={[fw, fh, fd]} />
+          <Mat color={item.color} />
+        </mesh>
+      )
+  }
+
+  return (
+    <group position={[x + fw / 2, 0, z + fd / 2]} rotation={[0, rotY, 0]}>
+      {Shape}
+    </group>
+  )
 }
 
 // ── Room component ─────────────────────────────────────────────
@@ -42,7 +432,6 @@ function Room({ room }) {
 
   return (
     <group>
-      {/* Floor(s) */}
       {isLShape ? (
         getLShapeRects3D(room).map((r, i) => (
           <mesh key={i} position={[r.x + r.w / 2, 0, r.z + r.d / 2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
@@ -56,56 +445,27 @@ function Room({ room }) {
           <meshStandardMaterial color={room.floorColor} />
         </mesh>
       )}
-
       {/* Back wall */}
       <mesh position={[w / 2, h / 2, 0]}>
         <boxGeometry args={[w, h, 0.08]} />
         <meshStandardMaterial color={room.wallColor} />
       </mesh>
-
       {/* Left wall */}
       <mesh position={[0, h / 2, d / 2]}>
         <boxGeometry args={[0.08, h, d]} />
         <meshStandardMaterial color={room.wallColor} />
       </mesh>
-
       {/* Right wall */}
       <mesh position={[w, h / 2, d / 2]}>
         <boxGeometry args={[0.08, h, d]} />
         <meshStandardMaterial color={room.wallColor} />
       </mesh>
-
       {/* Ceiling */}
-      <mesh position={[w / 2, h, d / 2]} rotation={[Math.PI / 2, 0, 0]} receiveShadow>
+      <mesh position={[w / 2, h, d / 2]} rotation={[Math.PI / 2, 0, 0]}>
         <planeGeometry args={[w, d]} />
-        <meshStandardMaterial color={room.wallColor} opacity={0.35} transparent />
+        <meshStandardMaterial color={room.wallColor} opacity={0.3} transparent />
       </mesh>
     </group>
-  )
-}
-
-// ── Furniture piece component ──────────────────────────────────
-function FurniturePiece({ item }) {
-  const fw = item.width * item.scale
-  const fd = item.height * item.scale
-  const fh = (TYPE_HEIGHTS[item.type] ?? 0.6) * item.scale
-
-  // Convert 2D canvas position to 3D world coords
-  const x = (item.x - PAD) / SCALE
-  const z = (item.y - PAD) / SCALE
-
-  // Convert 2D rotation (degrees) to 3D Y-axis rotation (radians)
-  const rotY = -(item.rotation * Math.PI) / 180
-
-  return (
-    <mesh
-      position={[x + fw / 2, fh / 2, z + fd / 2]}
-      rotation={[0, rotY, 0]}
-      castShadow
-    >
-      <boxGeometry args={[fw, fh, fd]} />
-      <meshStandardMaterial color={item.color} />
-    </mesh>
   )
 }
 
@@ -119,7 +479,7 @@ export default function Preview3D() {
       <div className="preview-topbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button onClick={() => navigate('/editor')} className="btn-back2d">← Back to 2D</button>
-          <span style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 18, fontWeight: 700, color: 'var(--s-text)' }}>Spacio</span>
+          <span style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 18, fontWeight: 500, color: 'var(--s-text)' }}>Spacio</span>
         </div>
         <div className="topbar-title">
           <Home size={16} strokeWidth={2.5} />
@@ -134,17 +494,18 @@ export default function Preview3D() {
       <div className="canvas3d">
         <Canvas
           shadows
-          camera={{ position: [room.width / 2, room.length * 0.8, room.length * 1.5], fov: 55 }}
+          camera={{ position: [room.width / 2, room.length * 0.85, room.length * 1.6], fov: 52 }}
           style={{ background: 'linear-gradient(180deg, #c9dde8 0%, #e8eff4 100%)' }}
         >
-          <ambientLight intensity={0.7} />
+          <ambientLight intensity={0.55} />
           <directionalLight
-            position={[room.width, 5, room.length]}
-            intensity={1.2}
+            position={[room.width * 1.2, 6, room.length * 1.2]}
+            intensity={1.4}
             castShadow
             shadow-mapSize={[2048, 2048]}
           />
-          <pointLight position={[room.width / 2, 2.5, room.length / 2]} intensity={0.4} />
+          <pointLight position={[room.width / 2, 2.4, room.length / 2]} intensity={0.35} />
+          <hemisphereLight skyColor="#ddeeff" groundColor="#8a7060" intensity={0.4} />
 
           <Room room={room} />
           {furniture.map(item => (
@@ -152,10 +513,10 @@ export default function Preview3D() {
           ))}
 
           <OrbitControls
-            target={[room.width / 2, 0.5, room.length / 2]}
+            target={[room.width / 2, 0.6, room.length / 2]}
             maxPolarAngle={Math.PI / 2.1}
             minDistance={1}
-            maxDistance={20}
+            maxDistance={22}
           />
         </Canvas>
       </div>
