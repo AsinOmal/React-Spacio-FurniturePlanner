@@ -1,8 +1,9 @@
+import { useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { useNavigate } from 'react-router-dom'
 import { useDesign } from '../context/DesignContext'
-import { Home, Mouse } from 'lucide-react'
+import { Home, Mouse, Sun, SunDim, Layers } from 'lucide-react'
 import './Preview3D.css'
 
 const SCALE = 80
@@ -473,6 +474,8 @@ function Room({ room }) {
 export default function Preview3D() {
   const navigate = useNavigate()
   const { room, furniture } = useDesign()
+  const [shading, setShading] = useState(1.0)   // 0.1 – 2.0
+  const [shadows, setShadows] = useState(true)
 
   return (
     <div className="preview3d">
@@ -485,7 +488,33 @@ export default function Preview3D() {
           <Home size={16} strokeWidth={2.5} />
           <span>3D Room Preview</span>
         </div>
-        <div className="topbar-hint">
+        <div className="topbar-hint" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          {/* Sunlight slider */}
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--s-text-2, #666)', userSelect: 'none' }}>
+            <SunDim size={14} strokeWidth={2} style={{ opacity: 0.7 }} />
+            <input
+              type="range" min="0.1" max="2.0" step="0.05"
+              value={shading}
+              onChange={e => setShading(parseFloat(e.target.value))}
+              style={{ width: 90, accentColor: '#f59e0b', cursor: 'pointer' }}
+              title="Sunlight intensity"
+            />
+            <Sun size={14} strokeWidth={2} style={{ opacity: 0.7 }} />
+          </label>
+          {/* Shadow toggle */}
+          <button
+            onClick={() => setShadows(s => !s)}
+            title={shadows ? 'Shadows ON — click to disable' : 'Shadows OFF — click to enable'}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 6, cursor: 'pointer', border: 'none',
+              background: shadows ? '#1a2744' : 'transparent',
+              color: shadows ? '#fff' : 'var(--s-text-2, #666)',
+              outline: shadows ? 'none' : '1px solid #ccc',
+            }}
+          >
+            <Layers size={13} /> {shadows ? 'Shadows' : 'Flat'}
+          </button>
           <Mouse size={14} strokeWidth={2.5} style={{ opacity: 0.7 }} />
           <span>Drag to orbit · Scroll to zoom</span>
         </div>
@@ -497,15 +526,15 @@ export default function Preview3D() {
           camera={{ position: [room.width / 2, room.length * 1.4, room.length * 2.4], fov: 52 }}
           style={{ background: 'linear-gradient(180deg, #c9dde8 0%, #e8eff4 100%)' }}
         >
-          <ambientLight intensity={0.55} />
+          <ambientLight intensity={0.55 * shading} />
           <directionalLight
             position={[room.width * 1.2, 6, room.length * 1.2]}
-            intensity={1.4}
-            castShadow
+            intensity={1.4 * shading}
+            castShadow={shadows}
             shadow-mapSize={[2048, 2048]}
           />
-          <pointLight position={[room.width / 2, 2.4, room.length / 2]} intensity={0.35} />
-          <hemisphereLight skyColor="#ddeeff" groundColor="#8a7060" intensity={0.4} />
+          <pointLight position={[room.width / 2, 2.4, room.length / 2]} intensity={0.35 * shading} />
+          <hemisphereLight skyColor="#ddeeff" groundColor="#8a7060" intensity={0.4 * shading} />
 
           <Room room={room} />
           {furniture.map(item => (
