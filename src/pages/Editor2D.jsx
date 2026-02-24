@@ -38,43 +38,38 @@ function getLShapeRects(room) {
   ]
 }
 
-// ── Boundary clamp (rotation-aware) ─────────────────────────
-function clampToRoom(x, y, item, room) {
+// ── Boundary clamp — x,y are the CENTER of the item ─────────
+function clampToRoom(cx, cy, item, room) {
   const iw = item.width * SCALE * item.scale
   const ih = item.height * SCALE * item.scale
   const rad = (item.rotation || 0) * Math.PI / 180
 
-  // 4 corners relative to (0,0) of the item
-  const corners = [
-    { cx: 0, cy: 0 },
-    { cx: iw, cy: 0 },
-    { cx: iw, cy: ih },
-    { cx: 0, cy: ih }
-  ]
+  // Half-extents of the rotated bounding box
+  const hw = (Math.abs(Math.cos(rad)) * iw + Math.abs(Math.sin(rad)) * ih) / 2
+  const hh = (Math.abs(Math.sin(rad)) * iw + Math.abs(Math.cos(rad)) * ih) / 2
 
-  let minX = 0, maxX = 0, minY = 0, maxY = 0
-  corners.forEach(p => {
-    const rx = p.cx * Math.cos(rad) - p.cy * Math.sin(rad)
-    const ry = p.cx * Math.sin(rad) + p.cy * Math.cos(rad)
-    if (rx < minX) minX = rx
-    if (rx > maxX) maxX = rx
-    if (ry < minY) minY = ry
-    if (ry > maxY) maxY = ry
-  })
-
-  // The item's true bounding box spans [x + minX, x + maxX] and [y + minY, y + maxY]
   if (room.shape === 'L-Shape') {
     const [main, wing] = getLShapeRects(room)
-    const itemCenterY = y + ih / 2
-    const rect = itemCenterY > main.y + main.h ? wing : main
-    const cx = Math.max(rect.x - minX, Math.min(x, rect.x + rect.w - maxX))
-    const cy = Math.max(rect.y - minY, Math.min(y, rect.y + rect.h - maxY))
-    return { x: cx, y: cy }
+    const floorMinX = main.x, floorMaxX = main.x + main.w
+    const floorMinY = main.y, floorMaxY = main.y + main.h
+    // Check if the item's center is in the wing zone
+    const inWing = cy + hh > main.y + main.h
+    const r = inWing ? wing : main
+    return {
+      x: Math.max(r.x + hw, Math.min(cx, r.x + r.w - hw)),
+      y: Math.max(r.y + hh, Math.min(cy, r.y + r.h - hh)),
+    }
+    void floorMinX; void floorMaxX; void floorMinY; void floorMaxY
   }
 
+  const floorLeft = PAD
+  const floorTop = PAD
+  const floorRight = PAD + room.width * SCALE
+  const floorBottom = PAD + room.length * SCALE
+
   return {
-    x: Math.max(PAD - minX, Math.min(x, PAD + room.width * SCALE - maxX)),
-    y: Math.max(PAD - minY, Math.min(y, PAD + room.length * SCALE - maxY)),
+    x: Math.max(floorLeft + hw, Math.min(cx, floorRight - hw)),
+    y: Math.max(floorTop + hh, Math.min(cy, floorBottom - hh)),
   }
 }
 
@@ -218,14 +213,35 @@ export default function Editor2D() {
 
   // ── Drag end: clamp + optional snap + commit history ─────────
   const handleDragEnd = useCallback((item, e) => {
-    let x = e.target.x()
-    let y = e.target.y()
-    if (snapOn) { x = snapGrid(x); y = snapGrid(y) }
-    const clamped = clampToRoom(x, y, item, room)
-    e.target.position(clamped)
+    // When offsetX/offsetY are set to half-dimensions, e.target.x()/y() returns the CENTER
+    let cx = e.target.x()
+    let cy = e.target.y()
+    if (snapOn) { cx = snapGrid(cx); cy = snapGrid(cy) }
+    const clamped = clampToRoom(cx, cy, item, room)
+    e.target.x(clamped.x)
+    e.target.y(clamped.y)
     updateFurniture(item.id, clamped)
     commitFurnitureHistory()
   }, [snapOn, room, updateFurniture, commitFurnitureHistory])
+
+  // ── Transform end: persist scale/rotation from canvas handles ─
+  const handleTransformEnd = useCallback((item, e) => {
+    const node = e.target
+    const scaleX = node.scaleX()
+    const newScale = (item.scale || 1) * scaleX
+    const newRotation = node.rotation()
+    // Reset Konva's own scale after capturing it (we store it in data)
+    node.scaleX(1)
+    node.scaleY(1)
+    const cx = node.x()
+    const cy = node.y()
+    const updatedItem = { ...item, scale: newScale, rotation: newRotation }
+    const clamped = clampToRoom(cx, cy, updatedItem, room)
+    node.x(clamped.x)
+    node.y(clamped.y)
+    updateFurniture(item.id, { scale: newScale, rotation: newRotation, ...clamped })
+    commitFurnitureHistory()
+  }, [room, updateFurniture, commitFurnitureHistory])
 
   // ── Property change: commit after slider settles ─────────────
   const handlePropChange = useCallback((id, updates) => {
@@ -415,29 +431,37 @@ export default function Editor2D() {
                   <MeasurementLines room={room} />
 
                   {/* Furniture */}
-                  {furniture.map(item => (
-                    <Rect
-                      key={item.id}
-                      id={'item-' + item.id}
-                      x={item.x} y={item.y}
-                      width={item.width * SCALE * item.scale}
-                      height={item.height * SCALE * item.scale}
-                      fill={item.color}
-                      stroke={selectedId === item.id ? '#2563eb' : 'rgba(0,0,0,0.2)'}
-                      strokeWidth={selectedId === item.id ? 2.5 : 1}
-                      rotation={item.rotation}
-                      draggable
-                      cornerRadius={4}
-                      shadowColor="black"
-                      shadowBlur={selectedId === item.id ? 10 : 2}
-                      shadowOpacity={0.2}
-                      onClick={() => setSelectedId(item.id)}
-                      onTap={() => setSelectedId(item.id)}
-                      onDragEnd={e => handleDragEnd(item, e)}
-                    />
-                  ))}
+                  {furniture.map(item => {
+                    const iw = item.width * SCALE * item.scale
+                    const ih = item.height * SCALE * item.scale
+                    return (
+                      <Rect
+                        key={item.id}
+                        id={'item-' + item.id}
+                        x={item.x}
+                        y={item.y}
+                        offsetX={iw / 2}
+                        offsetY={ih / 2}
+                        width={iw}
+                        height={ih}
+                        fill={item.color}
+                        stroke={selectedId === item.id ? '#2563eb' : 'rgba(0,0,0,0.2)'}
+                        strokeWidth={selectedId === item.id ? 2.5 : 1}
+                        rotation={item.rotation}
+                        draggable
+                        cornerRadius={4}
+                        shadowColor="black"
+                        shadowBlur={selectedId === item.id ? 10 : 2}
+                        shadowOpacity={0.2}
+                        onClick={() => setSelectedId(item.id)}
+                        onTap={() => setSelectedId(item.id)}
+                        onDragEnd={e => handleDragEnd(item, e)}
+                        onTransformEnd={e => handleTransformEnd(item, e)}
+                      />
+                    )
+                  })}
 
-                  {/* Labels — same pivot as rect: (item.x, item.y) */}
+                  {/* Labels — same pivot as rect: centered on item.x, item.y */}
                   {showLabels && furniture.map(item => {
                     const iw = item.width * SCALE * item.scale
                     const ih = item.height * SCALE * item.scale
@@ -446,8 +470,8 @@ export default function Editor2D() {
                         key={'lbl-' + item.id}
                         x={item.x}
                         y={item.y}
-                        offsetX={0}
-                        offsetY={6 - ih / 2}
+                        offsetX={iw / 2}
+                        offsetY={ih / 2 - 6}
                         width={iw}
                         text={item.type}
                         fontSize={11}

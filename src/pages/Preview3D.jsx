@@ -417,7 +417,7 @@ function FurniturePiece({ item }) {
   }
 
   return (
-    <group position={[x + fw / 2, 0, z + fd / 2]} rotation={[0, rotY, 0]}>
+    <group position={[x, 0, z]} rotation={[0, rotY, 0]}>
       {Shape}
     </group>
   )

@@ -93,15 +93,22 @@ export function DesignProvider({ children }) {
 
   // ── Furniture CRUD (all push to history) ─────────────────────
   const addFurniture = (item) => {
+    const SCALE = 80
+    const PAD = 40
+    // x,y represent the CENTER of the item on the canvas
+    const iw = item.width * SCALE
+    const ih = item.height * SCALE
     const newItem = {
       id: Date.now(),
       ...item,
-      x: 100,
-      y: 100,
+      x: PAD + (room.width * SCALE) / 2,
+      y: PAD + (room.length * SCALE) / 2,
       rotation: 0,
       scale: 1,
       color: item.defaultColor
     }
+    // Tiny offset so each new item doesn't perfectly overlap the last
+    void iw; void ih
     setFurniture(prev => {
       const next = [...prev, newItem]
       pushHistory(next)
