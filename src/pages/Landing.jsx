@@ -1,22 +1,23 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { LayoutDashboard, PenLine, Box } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import AuthModal from '../components/AuthModal'
 import './Landing.css'
 
 const FEATURES = [
   {
-    icon: '⬜',
+    icon: <LayoutDashboard size={28} strokeWidth={1.5} />,
     title: 'Room Configuration',
     desc: 'Define your space precisely — set dimensions up to 20×20m, choose wall and floor finishes, and configure room shape before you begin.',
   },
   {
-    icon: '✏️',
+    icon: <PenLine size={28} strokeWidth={1.5} />,
     title: '2D Design Editor',
     desc: 'Drag, rotate and scale furniture on a pixel-accurate canvas. Snap to grid, undo mistakes, and see live measurements as you work.',
   },
   {
-    icon: '🏠',
+    icon: <Box size={28} strokeWidth={1.5} />,
     title: '3D Space Preview',
     desc: 'Step inside your design instantly. Orbit, zoom and inspect every corner of your room rendered in real-time 3D.',
   },

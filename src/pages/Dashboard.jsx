@@ -8,25 +8,37 @@ import './Dashboard.css'
 
 function DesignThumbnail({ design }) {
   const { room, furniture } = design
-  const S = 36, PAD = 6
-  const W = room.width * S + PAD * 2
-  const H = room.length * S + PAD * 2
+  const S = 3.5   // px per canvas-pixel (canvas uses 80px/m + 40px PAD)
+  const CANVAS_PAD = 40
+  const CANVAS_SCALE = 80
+  const vw = (room.width * CANVAS_SCALE + CANVAS_PAD * 2) * S
+  const vh = (room.length * CANVAS_SCALE + CANVAS_PAD * 2) * S
+
+  // floor rect in canvas coords
+  const fx = CANVAS_PAD * S
+  const fy = CANVAS_PAD * S
+  const fw = room.width * CANVAS_SCALE * S
+  const fh = room.length * CANVAS_SCALE * S
+
   return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}
-      style={{ display: 'block', width: '100%', height: '100%' }}>
-      <rect x={PAD} y={PAD}
-        width={room.width * S} height={room.length * S}
-        fill={room.floorColor} stroke={room.wallColor} strokeWidth={5} rx={3} />
+    <svg width="100%" height="100%" viewBox={`0 0 ${vw} ${vh}`}
+      style={{ display: 'block' }} preserveAspectRatio="xMidYMid meet">
+      {/* Background = wall colour */}
+      <rect x={0} y={0} width={vw} height={vh} fill={room.wallColor} />
+      {/* Floor */}
+      <rect x={fx} y={fy} width={fw} height={fh} fill={room.floorColor} rx={2} />
+      {/* Furniture — f.x/f.y are centres in canvas-px coordinates */}
       {furniture.map(f => {
-        const fx = PAD + (f.x - 40) / 80 * S
-        const fy = PAD + (f.y - 40) / 80 * S
-        const fw = f.width * f.scale * S
-        const fh = f.height * f.scale * S
+        const iw = f.width * CANVAS_SCALE * f.scale * S
+        const ih = f.height * CANVAS_SCALE * f.scale * S
+        const cx = f.x * S
+        const cy = f.y * S
         return (
           <rect key={f.id}
-            x={fx} y={fy} width={fw} height={fh}
-            fill={f.color} rx={2} opacity={0.88}
-            transform={`rotate(${f.rotation},${fx + fw / 2},${fy + fh / 2})`}
+            x={cx - iw / 2} y={cy - ih / 2}
+            width={iw} height={ih}
+            fill={f.color} rx={1.5} opacity={0.9}
+            transform={`rotate(${f.rotation},${cx},${cy})`}
           />
         )
       })}
