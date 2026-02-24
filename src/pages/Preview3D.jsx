@@ -1,9 +1,10 @@
-import { useState } from 'react'
-import { Canvas } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+import { useState, useRef } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { OrbitControls, PointerLockControls, KeyboardControls, useKeyboardControls } from '@react-three/drei'
 import { useNavigate } from 'react-router-dom'
 import { useDesign } from '../context/DesignContext'
-import { Home, Mouse, Sun, SunDim, Layers } from 'lucide-react'
+import { Home, Mouse, Sun, SunDim, Layers, Footprints } from 'lucide-react'
+import * as THREE from 'three'
 import './Preview3D.css'
 
 const SCALE = 80
@@ -470,12 +471,50 @@ function Room({ room }) {
   )
 }
 
+// ── FPS Movement Controller ─────────────────────────────────────────
+function FpsController({ room }) {
+  const [, get] = useKeyboardControls()
+  const { camera } = useThree()
+  const velocity = useRef(new THREE.Vector3())
+  const direction = useRef(new THREE.Vector3())
+  const SPEED = 4.0
+
+  useFrame((state, delta) => {
+    const { forward, backward, left, right } = get()
+
+    // Calculate input direction
+    const z = Number(forward) - Number(backward)
+    const x = Number(right) - Number(left)
+    direction.current.set(x, 0, -z).normalize()
+
+    // Apply movement relative to camera rotation
+    if (direction.current.lengthSq() > 0) {
+      velocity.current.copy(direction.current).multiplyScalar(SPEED * delta)
+      camera.translateX(velocity.current.x)
+      camera.translateZ(velocity.current.z)
+    }
+
+    // Lock camera Y to eye level (~1.6m) inside the room bounds
+    camera.position.y = 1.6
+
+    // Basic collision (don't walk through walls)
+    const PAD = 0.5 // keep half a meter from walls
+    if (camera.position.x < PAD) camera.position.x = PAD
+    if (camera.position.x > room.width - PAD) camera.position.x = room.width - PAD
+    if (camera.position.z < PAD) camera.position.z = PAD
+    if (camera.position.z > room.length - PAD) camera.position.z = room.length - PAD
+  })
+
+  return null
+}
+
 // ── Main Page ──────────────────────────────────────────────────
 export default function Preview3D() {
   const navigate = useNavigate()
   const { room, furniture } = useDesign()
   const [shading, setShading] = useState(1.0)   // 0.1 – 2.0
   const [shadows, setShadows] = useState(true)
+  const [isWalking, setIsWalking] = useState(false)
 
   return (
     <div className="preview3d">
@@ -515,39 +554,80 @@ export default function Preview3D() {
           >
             <Layers size={13} /> {shadows ? 'Shadows' : 'Flat'}
           </button>
-          <Mouse size={14} strokeWidth={2.5} style={{ opacity: 0.7 }} />
-          <span>Drag to orbit · Scroll to zoom</span>
+          {/* Walk mode toggle */}
+          <button
+            onClick={() => setIsWalking(w => !w)}
+            title={isWalking ? 'Exit Walk Mode (ESC)' : 'Enter First-Person Walk Mode'}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 6, cursor: 'pointer', border: 'none',
+              background: isWalking ? '#10b981' : 'transparent',
+              color: isWalking ? '#fff' : 'var(--s-text-2, #666)',
+              outline: isWalking ? 'none' : '1px solid #ccc',
+            }}
+          >
+            <Footprints size={13} /> {isWalking ? 'Walking' : 'Walk'}
+          </button>
+
+          {isWalking ? (
+            <>
+              <Mouse size={14} strokeWidth={2.5} style={{ opacity: 0.7 }} />
+              <span>Look around · WASD to move · ESC to exit</span>
+            </>
+          ) : (
+            <>
+              <Mouse size={14} strokeWidth={2.5} style={{ opacity: 0.7 }} />
+              <span>Drag to orbit · Scroll to zoom</span>
+            </>
+          )}
         </div>
       </div>
 
       <div className="canvas3d">
-        <Canvas
-          shadows
-          camera={{ position: [room.width / 2, room.length * 1.4, room.length * 2.4], fov: 52 }}
-          style={{ background: 'linear-gradient(180deg, #c9dde8 0%, #e8eff4 100%)' }}
+        <KeyboardControls
+          map={[
+            { name: 'forward', keys: ['ArrowUp', 'KeyW'] },
+            { name: 'backward', keys: ['ArrowDown', 'KeyS'] },
+            { name: 'left', keys: ['ArrowLeft', 'KeyA'] },
+            { name: 'right', keys: ['ArrowRight', 'KeyD'] },
+          ]}
         >
-          <ambientLight intensity={0.55 * shading} />
-          <directionalLight
-            position={[room.width * 1.2, 6, room.length * 1.2]}
-            intensity={1.4 * shading}
-            castShadow={shadows}
-            shadow-mapSize={[2048, 2048]}
-          />
-          <pointLight position={[room.width / 2, 2.4, room.length / 2]} intensity={0.35 * shading} />
-          <hemisphereLight skyColor="#ddeeff" groundColor="#8a7060" intensity={0.4 * shading} />
+          <Canvas
+            shadows
+            camera={{ position: [room.width / 2, room.length * 1.4, room.length * 2.4], fov: 52 }}
+            style={{ background: 'linear-gradient(180deg, #c9dde8 0%, #e8eff4 100%)' }}
+          >
+            <ambientLight intensity={0.55 * shading} />
+            <directionalLight
+              position={[room.width * 1.2, 6, room.length * 1.2]}
+              intensity={1.4 * shading}
+              castShadow={shadows}
+              shadow-mapSize={[2048, 2048]}
+            />
+            <pointLight position={[room.width / 2, 2.4, room.length / 2]} intensity={0.35 * shading} />
+            <hemisphereLight skyColor="#ddeeff" groundColor="#8a7060" intensity={0.4 * shading} />
 
-          <Room room={room} />
-          {furniture.map(item => (
-            <FurniturePiece key={item.id} item={item} />
-          ))}
+            <Room room={room} />
+            {furniture.map(item => (
+              <FurniturePiece key={item.id} item={item} />
+            ))}
 
-          <OrbitControls
-            target={[room.width / 2, 0.6, room.length / 2]}
-            maxPolarAngle={Math.PI / 2.1}
-            minDistance={1}
-            maxDistance={22}
-          />
-        </Canvas>
+            {/* Controls toggle based on walking state */}
+            {isWalking ? (
+              <>
+                <PointerLockControls onUnlock={() => setIsWalking(false)} />
+                <FpsController room={room} />
+              </>
+            ) : (
+              <OrbitControls
+                target={[room.width / 2, 0.6, room.length / 2]}
+                maxPolarAngle={Math.PI / 2.1}
+                minDistance={1}
+                maxDistance={22}
+              />
+            )}
+          </Canvas>
+        </KeyboardControls>
       </div>
 
       <div className="info-bar">
