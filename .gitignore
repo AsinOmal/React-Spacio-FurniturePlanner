@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Report documentation — keep local only
+REPORT_DOCUMENTATION.md
+docs/
