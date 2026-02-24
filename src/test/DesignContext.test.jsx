@@ -144,9 +144,12 @@ describe('deleteFurniture', () => {
     })
 
     it('TC-DC-12: only removes the targeted item, leaving others intact', () => {
+        vi.useFakeTimers()
         const getCtx = renderWithContext(<></>)
         act(() => { getCtx().addFurniture(CHAIR) })
+        vi.advanceTimersByTime(1)
         act(() => { getCtx().addFurniture(SOFA) })
+        vi.useRealTimers()
         const chairId = getCtx().furniture[0].id
         act(() => { getCtx().deleteFurniture(chairId) })
         expect(getCtx().furniture).toHaveLength(1)
