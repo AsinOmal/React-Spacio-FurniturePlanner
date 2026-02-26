@@ -27,13 +27,13 @@ function getLShapeRects3D(room) {
 const MaterialContext = createContext('Matte')
 
 const MAT_PRESETS = {
-  Matte: { roughness: 0.8, metalness: 0.05 },
-  Wood: { roughness: 0.7, metalness: 0.1 },
-  Fabric: { roughness: 1.0, metalness: 0.0 },
-  Leather: { roughness: 0.5, metalness: 0.2 },
-  Metal: { roughness: 0.2, metalness: 0.8 },
-  Plastic: { roughness: 0.4, metalness: 0.1 },
-  Glass: { roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.6 },
+  Matte: { roughness: 0.9, metalness: 0.0, clearcoat: 0.0 },
+  Wood: { roughness: 0.4, metalness: 0.1, clearcoat: 0.4, clearcoatRoughness: 0.2 },
+  Fabric: { roughness: 1.0, metalness: 0.0, clearcoat: 0.0 },
+  Leather: { roughness: 0.3, metalness: 0.1, clearcoat: 0.2, clearcoatRoughness: 0.3 },
+  Metal: { roughness: 0.2, metalness: 0.9, clearcoat: 0.0 },
+  Plastic: { roughness: 0.1, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.1 },
+  Glass: { roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.6, transmission: 0.9, thickness: 0.5 },
 }
 
 function Mat({ color, roughness, metalness }) {
