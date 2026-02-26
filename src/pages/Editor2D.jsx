@@ -9,7 +9,7 @@ import autoTable from 'jspdf-autotable'
 import {
   ArrowLeft, Sun, Moon, Save, Box,
   Undo2, Redo2, Maximize, Grid3x3, Tags, Download,
-  Trash2, Pointer, Package
+  Trash2, Pointer, Package, Ruler
 } from 'lucide-react'
 import './Editor2D.css'
 
@@ -217,6 +217,7 @@ export default function Editor2D() {
   const isGuest = localStorage.getItem('isGuest') === 'true'
   const [snapOn, setSnapOn] = useState(false)
   const [showLabels, setShowLabels] = useState(true)
+  const [showDimensions, setShowDimensions] = useState(true)
   const [showGrid, setShowGrid] = useState(true)
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
   const [stageScale, setStageScale] = useState(1.4)
@@ -509,6 +510,11 @@ export default function Editor2D() {
             title="Toggle Labels"
           ><Tags size={14} /> Labels</button>
           <button
+            className={`tool-btn ${showDimensions ? 'tool-btn--active' : ''}`}
+            onClick={() => setShowDimensions(s => !s)}
+            title="Toggle Dimensions"
+          ><Ruler size={14} /> Dims</button>
+          <button
             className="tool-btn"
             onClick={handleExport}
             title="Export PDF Report"
@@ -595,7 +601,7 @@ export default function Editor2D() {
                   <MeasurementLines room={room} />
 
                   {/* Selected Item Dynamic Distance Lines */}
-                  {selectedId && <SelectedDimensionLines item={furniture.find(f => f.id === selectedId)} room={room} />}
+                  {showDimensions && selectedId && <SelectedDimensionLines item={furniture.find(f => f.id === selectedId)} room={room} />}
 
                   {/* Furniture */}
                   {furniture.map(item => {
