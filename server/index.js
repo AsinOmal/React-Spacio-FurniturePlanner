@@ -20,6 +20,10 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Spacio API is running' })
 })
 
+// Routes
+const authRoutes = require('./routes/auth')
+app.use('/api/auth', authRoutes)
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`)
