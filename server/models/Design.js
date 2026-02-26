@@ -30,7 +30,7 @@ const designSchema = new mongoose.Schema({
   // The furniture array items
   furniture: [{
     id: String,
-    type: String, // e.g. "Sofa"
+    type: { type: String }, // Workaround for Mongoose 'type' keyword
     color: String,
     material: String,
     x: Number,
