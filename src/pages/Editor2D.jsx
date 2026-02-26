@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Stage, Layer, Rect, Line, Text, Transformer } from 'react-konva'
+import { Stage, Layer, Rect, Line, Text, Group, Transformer } from 'react-konva'
 import { useDesign } from '../context/DesignContext'
 import SaveModal from '../components/SaveModal'
 import AuthModal from '../components/AuthModal'
@@ -77,6 +77,79 @@ function clampToRoom(cx, cy, item, room) {
 // ── Snap helper ──────────────────────────────────────────────
 function snapGrid(val) {
   return Math.round(val / GRID_PX) * GRID_PX
+}
+
+// ── Selected Item Dimension Lines ─────────────────────────────
+function SelectedDimensionLines({ item, room }) {
+  if (!item) return null
+
+  const cx = item.x
+  const cy = item.y
+  const iw = item.width * SCALE * item.scale
+  const ih = item.height * SCALE * item.scale
+  const rad = (item.rotation || 0) * Math.PI / 180
+
+  // Rotated bounding box half-extents
+  const hw = (Math.abs(Math.cos(rad)) * iw + Math.abs(Math.sin(rad)) * ih) / 2
+  const hh = (Math.abs(Math.sin(rad)) * iw + Math.abs(Math.cos(rad)) * ih) / 2
+
+  let boundLeft = PAD
+  let boundRight = PAD + room.width * SCALE
+  let boundTop = PAD
+  let boundBottom = PAD + room.length * SCALE
+
+  if (room.shape === 'L-Shape') {
+    const [main, wing] = getLShapeRects(room)
+    if (cy > main.y + main.h) {
+      boundRight = wing.x + wing.w
+    } else {
+      boundRight = main.x + main.w
+    }
+    if (cx > PAD + wing.w) {
+      boundBottom = main.y + main.h
+    } else {
+      boundBottom = wing.y + wing.h
+    }
+  }
+
+  const lines = []
+  const COLOR = '#ef4444' // red
+
+  const makeLine = (id, x1, y1, x2, y2, valPixels) => {
+    const distM = (valPixels / SCALE).toFixed(2)
+    // Only show if >= 0.10m to avoid overlap
+    if (Number(distM) < 0.10) return null
+
+    // Label goes in the middle
+    let textX = (x1 + x2) / 2
+    let textY = (y1 + y2) / 2
+
+    return (
+      <Group key={id} listening={false}>
+        <Line points={[x1, y1, x2, y2]} stroke={COLOR} strokeWidth={1} dash={[4, 4]} />
+        <Rect
+          x={textX - 16} y={textY - 8} width={32} height={16}
+          fill="white" cornerRadius={2} opacity={0.9}
+        />
+        <Text
+          x={textX - 16} y={textY - 6} width={32} align="center"
+          text={`${distM}m`} fontSize={10} fill={COLOR} fontStyle="bold"
+        />
+      </Group>
+    )
+  }
+
+  const leftDist = (cx - hw) - boundLeft
+  const rightDist = boundRight - (cx + hw)
+  const topDist = (cy - hh) - boundTop
+  const bottomDist = boundBottom - (cy + hh)
+
+  if (leftDist > 0) lines.push(makeLine('dl', boundLeft, cy, cx - hw, cy, leftDist))
+  if (rightDist > 0) lines.push(makeLine('dr', cx + hw, cy, boundRight, cy, rightDist))
+  if (topDist > 0) lines.push(makeLine('dt', cx, boundTop, cx, cy - hh, topDist))
+  if (bottomDist > 0) lines.push(makeLine('db', cx, cy + hh, cx, boundBottom, bottomDist))
+
+  return <>{lines}</>
 }
 
 // ── Measurement line nodes ────────────────────────────────────
@@ -453,6 +526,9 @@ export default function Editor2D() {
 
                   {/* Measurement ruler lines */}
                   <MeasurementLines room={room} />
+
+                  {/* Selected Item Dynamic Distance Lines */}
+                  {selectedId && <SelectedDimensionLines item={furniture.find(f => f.id === selectedId)} room={room} />}
 
                   {/* Furniture */}
                   {furniture.map(item => {
