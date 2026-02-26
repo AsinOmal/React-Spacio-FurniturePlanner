@@ -155,6 +155,17 @@ npm run dev
 
 The app will be available at **http://localhost:5173**
 
+### Docker Installation (Recommended)
+
+To run the entire MERN stack (MongoDB, Node Backend, Nginx Frontend) in an isolated containerized environment:
+
+```bash
+# Ensure Docker is running, then execute:
+docker compose up --build -d
+```
+
+The app will be available at **http://localhost**
+
 ### Build for Production
 
 ```bash
