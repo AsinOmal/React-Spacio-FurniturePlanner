@@ -20,6 +20,12 @@
 }
 @media (max-width: 900px) {
   .preview-topbar { padding: 18px 28px; }
+  .preview-topbar .topbar-title { position: static; transform: none; display: none; }
+}
+
+@media (max-width: 700px) {
+  .preview-topbar { flex-direction: column; height: auto; padding: 12px; gap: 8px; }
+  .topbar-hint { justify-content: center; width: 100%; }
 }
 
 .preview-topbar .topbar-title {

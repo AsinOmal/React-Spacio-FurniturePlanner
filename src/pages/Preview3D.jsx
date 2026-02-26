@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, PointerLockControls, KeyboardControls, useKeyboardControls } from '@react-three/drei'
 import { useNavigate } from 'react-router-dom'
 import { useDesign } from '../context/DesignContext'
-import { Home, Mouse, Sun, SunDim, Layers, Footprints } from 'lucide-react'
+import { Home, Mouse, Sun, SunDim, Layers, Footprints, Box } from 'lucide-react'
 import * as THREE from 'three'
 import './Preview3D.css'
 
@@ -452,7 +452,7 @@ function FurniturePiece({ item }) {
 }
 
 // ── Room component ─────────────────────────────────────────────
-function Room({ room }) {
+function Room({ room, showWalls }) {
   const w = room.width
   const d = room.length
   const h = 2.8
@@ -473,26 +473,31 @@ function Room({ room }) {
           <meshPhysicalMaterial color={room.floorColor} />
         </mesh>
       )}
-      {/* Back wall */}
-      <mesh position={[w / 2, h / 2, 0]}>
-        <boxGeometry args={[w, h, 0.08]} />
-        <meshPhysicalMaterial color={room.wallColor} />
-      </mesh>
-      {/* Left wall */}
-      <mesh position={[0, h / 2, d / 2]}>
-        <boxGeometry args={[0.08, h, d]} />
-        <meshPhysicalMaterial color={room.wallColor} />
-      </mesh>
-      {/* Right wall */}
-      <mesh position={[w, h / 2, d / 2]}>
-        <boxGeometry args={[0.08, h, d]} />
-        <meshPhysicalMaterial color={room.wallColor} />
-      </mesh>
-      {/* Ceiling */}
-      <mesh position={[w / 2, h, d / 2]} rotation={[Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[w, d]} />
-        <meshPhysicalMaterial color={room.wallColor} opacity={0.3} transparent />
-      </mesh>
+      {/* Only render walls if showWalls is true */}
+      {showWalls && (
+        <>
+          {/* Back wall */}
+          <mesh position={[w / 2, h / 2, 0]}>
+            <boxGeometry args={[w, h, 0.08]} />
+            <meshPhysicalMaterial color={room.wallColor} />
+          </mesh>
+          {/* Left wall */}
+          <mesh position={[0, h / 2, d / 2]}>
+            <boxGeometry args={[0.08, h, d]} />
+            <meshPhysicalMaterial color={room.wallColor} />
+          </mesh>
+          {/* Right wall */}
+          <mesh position={[w, h / 2, d / 2]}>
+            <boxGeometry args={[0.08, h, d]} />
+            <meshPhysicalMaterial color={room.wallColor} />
+          </mesh>
+          {/* Ceiling */}
+          <mesh position={[w / 2, h, d / 2]} rotation={[Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[w, d]} />
+            <meshPhysicalMaterial color={room.wallColor} opacity={0.3} transparent />
+          </mesh>
+        </>
+      )}
     </group>
   )
 }
@@ -541,6 +546,7 @@ export default function Preview3D() {
   const [shading, setShading] = useState(1.0)   // 0.1 – 2.0
   const [shadows, setShadows] = useState(true)
   const [isWalking, setIsWalking] = useState(false)
+  const [showWalls, setShowWalls] = useState(true)
 
   return (
     <div className="preview3d">
@@ -566,6 +572,20 @@ export default function Preview3D() {
             />
             <Sun size={14} strokeWidth={2} style={{ opacity: 0.7 }} />
           </label>
+          {/* Walls toggle */}
+          <button
+            onClick={() => setShowWalls(w => !w)}
+            title={showWalls ? 'Hide Walls' : 'Show Walls'}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 6, cursor: 'pointer', border: 'none',
+              background: showWalls ? '#1a2744' : 'transparent',
+              color: showWalls ? '#fff' : 'var(--s-text-2, #666)',
+              outline: showWalls ? 'none' : '1px solid #ccc',
+            }}
+          >
+            <Box size={13} /> {showWalls ? 'Walls ON' : 'Walls OFF'}
+          </button>
           {/* Shadow toggle */}
           <button
             onClick={() => setShadows(s => !s)}
@@ -633,7 +653,7 @@ export default function Preview3D() {
             <pointLight position={[room.width / 2, 2.4, room.length / 2]} intensity={0.35 * shading} />
             <hemisphereLight skyColor="#ddeeff" groundColor="#8a7060" intensity={0.4 * shading} />
 
-            <Room room={room} />
+            <Room room={room} showWalls={showWalls} />
             {furniture.map(item => (
               <FurniturePiece key={item.id} item={item} />
             ))}
