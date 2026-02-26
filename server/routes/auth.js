@@ -7,7 +7,7 @@ const router = express.Router()
 
 // Make sure you define a JWT_SECRET in your .env file
 // If it's missing, we provide a fallback for local testing
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-spacio-key-123'
+const JWT_SECRET = process.env.JWT_SECRET
 
 // ── REGISTER ──────────────────────────────────────────────────
 router.post('/register', async (req, res) => {
