@@ -54,7 +54,7 @@ export function DesignProvider({ children }) {
       return
     }
     try {
-      const res = await fetch('http://localhost:5005/api/designs', {
+      const res = await fetch('/api/designs', {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
@@ -76,7 +76,7 @@ export function DesignProvider({ children }) {
     if (!token) return
 
     try {
-      const res = await fetch('http://localhost:5005/api/designs', {
+      const res = await fetch('/api/designs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ export function DesignProvider({ children }) {
     if (!token) return
 
     try {
-      const res = await fetch(`http://localhost:5005/api/designs/${id}`, {
+      const res = await fetch(`/api/designs/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })

@@ -9,4 +9,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.js'],
   },
+  server: {
+    proxy: {
+      '/api': 'http://localhost:5005',
+    },
+  },
 })
