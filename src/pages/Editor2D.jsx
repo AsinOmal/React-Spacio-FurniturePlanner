@@ -512,8 +512,8 @@ export default function Editor2D() {
           <button
             className={`tool-btn ${showDimensions ? 'tool-btn--active' : ''}`}
             onClick={() => setShowDimensions(s => !s)}
-            title="Toggle Dimensions"
-          ><Ruler size={14} /> Dims</button>
+            title="Toggle Ruler"
+          ><Ruler size={14} /> Ruler</button>
           <button
             className="tool-btn"
             onClick={handleExport}
