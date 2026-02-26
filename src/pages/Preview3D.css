@@ -18,15 +18,7 @@
   flex-shrink: 0;
   transition: background 0.3s, border-color 0.3s;
 }
-@media (max-width: 900px) {
-  .preview-topbar { padding: 18px 28px; }
-  .preview-topbar .topbar-title { position: static; transform: none; display: none; }
-}
 
-@media (max-width: 700px) {
-  .preview-topbar { flex-direction: column; height: auto; padding: 12px; gap: 8px; }
-  .topbar-hint { justify-content: center; width: 100%; }
-}
 
 .preview-topbar .topbar-title {
   display: flex;
@@ -77,4 +69,15 @@
   font-size: 12.5px;
   color: var(--s-text-2);
   flex-shrink: 0;
+}
+
+/* ── Responsive Overrides ── */
+@media (max-width: 950px) {
+  .preview-topbar { padding: 18px 28px; }
+  .preview-topbar .topbar-title { display: none; }
+}
+
+@media (max-width: 700px) {
+  .preview-topbar { flex-direction: column; height: auto; padding: 12px; gap: 8px; }
+  .topbar-hint { justify-content: center; width: 100%; }
 }
