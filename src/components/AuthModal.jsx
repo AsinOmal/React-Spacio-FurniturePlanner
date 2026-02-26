@@ -22,7 +22,7 @@ export default function AuthModal({ isOpen, onClose, initialView = 'choice' }) {
         const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login'
 
         try {
-            const res = await fetch(`http://localhost:5000${endpoint}`, {
+            const res = await fetch(`http://localhost:5005${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
