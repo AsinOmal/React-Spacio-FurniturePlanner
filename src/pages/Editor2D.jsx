@@ -685,6 +685,25 @@ export default function Editor2D() {
               </div>
 
               <div className="prop-row">
+                <label>Material</label>
+                <select value={selected.material || 'Matte'}
+                  onChange={e => {
+                    handlePropChange(selectedId, { material: e.target.value })
+                    handlePropCommit()
+                  }}
+                  style={{ flex: 1, padding: '4px', borderRadius: '4px', border: '1px solid var(--s-border)', fontSize: '12px', background: 'var(--s-bg)', color: 'var(--s-text-1)' }}
+                >
+                  <option value="Matte">Matte</option>
+                  <option value="Wood">Wood</option>
+                  <option value="Fabric">Fabric</option>
+                  <option value="Leather">Leather</option>
+                  <option value="Metal">Metal</option>
+                  <option value="Plastic">Plastic</option>
+                  <option value="Glass">Glass</option>
+                </select>
+              </div>
+
+              <div className="prop-row">
                 <label>Scale — {selected.scale.toFixed(1)}×</label>
                 <input type="range" min="0.5" max="2.5" step="0.1"
                   value={selected.scale}

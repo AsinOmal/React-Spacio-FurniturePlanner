@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, createContext, useContext } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, PointerLockControls, KeyboardControls, useKeyboardControls } from '@react-three/drei'
 import { useNavigate } from 'react-router-dom'
@@ -24,8 +24,32 @@ function getLShapeRects3D(room) {
 }
 
 // ── Shared material helper ──────────────────────────────────────
-function Mat({ color, roughness = 0.6, metalness = 0.05 }) {
-  return <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} />
+const MaterialContext = createContext('Matte')
+
+const MAT_PRESETS = {
+  Matte: { roughness: 0.8, metalness: 0.05 },
+  Wood: { roughness: 0.7, metalness: 0.1 },
+  Fabric: { roughness: 1.0, metalness: 0.0 },
+  Leather: { roughness: 0.5, metalness: 0.2 },
+  Metal: { roughness: 0.2, metalness: 0.8 },
+  Plastic: { roughness: 0.4, metalness: 0.1 },
+  Glass: { roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.6 },
+}
+
+function Mat({ color, roughness, metalness }) {
+  const materialName = useContext(MaterialContext)
+  const preset = MAT_PRESETS[materialName] || MAT_PRESETS.Matte
+  const finalRoughness = roughness ?? preset.roughness
+  const finalMetalness = metalness ?? preset.metalness
+
+  return (
+    <meshStandardMaterial
+      color={color}
+      {...preset}
+      roughness={finalRoughness}
+      metalness={finalMetalness}
+    />
+  )
 }
 
 // ── Shared leg helper (thin box leg) ───────────────────────────
@@ -419,9 +443,11 @@ function FurniturePiece({ item }) {
   }
 
   return (
-    <group position={[x, 0, z]} rotation={[0, rotY, 0]}>
-      {Shape}
-    </group>
+    <MaterialContext.Provider value={item.material || 'Matte'}>
+      <group position={[x, 0, z]} rotation={[0, rotY, 0]}>
+        {Shape}
+      </group>
+    </MaterialContext.Provider>
   )
 }
 
