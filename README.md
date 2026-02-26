@@ -30,6 +30,7 @@
 - **Delete Key** — remove selected item with the Delete or Backspace key
 - **Zoom** — scroll-wheel zoom in/out (Ctrl+Scroll), + / – buttons, and click-to-reset zoom percentage HUD
 - **Fit to Screen** — auto-fits the room plan to the available viewport on load
+- **PDF Export** — exports your 2D plan, room statistics, and a full Furniture Bill of Materials into a printable PDF
 - **Export PNG** — exports the current canvas layout as a high-resolution PNG
 
 ### 🧊 3D Room Preview
@@ -38,6 +39,8 @@
 - **Per-type 3D heights** for realistic proportions (Wardrobe 1.85m, Chair 0.9m, etc.)
 - **L-Shape** room geometry renders correctly in 3D
 - **Orbit controls** — click and drag to orbit, scroll to zoom
+- **First-Person Walkthrough** — toggle "Walk Mode" to drop to floor level and look/walk around using WASD and your mouse (FPS style)
+- **Walls Toggle** — optionally hide the 3D walls for an open-air blueprint view of your layout
 - Accurate wall, floor, and ceiling materials using your chosen colours
 
 ### 💾 Design Management (Dashboard)
@@ -46,8 +49,9 @@
 - **Open and resume** any previously saved design
 - **Delete designs** with a premium confirmation modal
 
-### 🔐 Authentication
-- Lightweight **username + password** login (demo credentials)
+### 🔐 Authentication & Backend
+- **Real Accounts** — secure user registration and login backed by MongoDB and bcryptjs
+- **Stateless JWT** — JSON Web Tokens used for secure, stateless API communication
 - **Guest / Demo Mode** — start designing without creating an account
 - Clean inline **AuthModal** for Sign In, Sign Up, or Guest Mode — no page redirects
 - Session-aware Navbar: shows "My Designs" and "Sign Out" when logged in
@@ -63,10 +67,14 @@
 
 | Layer | Technology |
 |---|---|
-| **Framework** | [React 19](https://react.dev/) |
+| **Frontend Framework** | [React 19](https://react.dev/) |
+| **Backend Framework** | [Express.js](https://expressjs.com/) on Node.js |
+| **Database** | [MongoDB](https://www.mongodb.com/) + [Mongoose](https://mongoosejs.com/) |
+| **Authentication** | JSON Web Tokens (JWT) + bcryptjs |
 | **Build Tool** | [Vite 7](https://vitejs.dev/) |
 | **Routing** | [React Router DOM v7](https://reactrouter.com/) |
 | **2D Canvas** | [Konva](https://konvajs.org/) + [React Konva](https://konvajs.org/docs/react/) |
+| **PDF Generation** | [jspdf](https://github.com/parallax/jsPDF) + [html2canvas](https://html2canvas.hertzen.com/) |
 | **3D Rendering** | [Three.js](https://threejs.org/) + [@react-three/fiber](https://docs.pmnd.rs/react-three-fiber) + [@react-three/drei](https://github.com/pmndrs/drei) |
 | **Icons** | [Lucide React](https://lucide.dev/) |
 | **Styling** | Vanilla CSS with CSS custom properties (design token system) |
@@ -125,10 +133,23 @@ furniture-planner/
 git clone https://github.com/AsinOmal/React-Spacio-FurniturePlanner.git
 cd React-Spacio-FurniturePlanner
 
-# 2. Install dependencies
+# 2. Install Frontend dependencies
 npm install
 
-# 3. Start the development server
+# 3. Install Backend dependencies
+cd server
+npm install
+
+# 4. Configure Backend Environment
+# Create a .env file in the `server` directory with the following:
+PORT=5005
+MONGODB_URI=mongodb://localhost:27017/spacio
+JWT_SECRET=your-secure-secret-key
+
+# 5. Start the Backend server (in the server/ directory)
+npm run dev
+
+# 6. Open a new terminal window in the project root and start the Frontend
 npm run dev
 ```
 
