@@ -43,7 +43,7 @@ function Mat({ color, roughness, metalness }) {
   const finalMetalness = metalness ?? preset.metalness
 
   return (
-    <meshStandardMaterial
+    <meshPhysicalMaterial
       color={color}
       {...preset}
       roughness={finalRoughness}
@@ -464,34 +464,34 @@ function Room({ room }) {
         getLShapeRects3D(room).map((r, i) => (
           <mesh key={i} position={[r.x + r.w / 2, 0, r.z + r.d / 2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
             <planeGeometry args={[r.w, r.d]} />
-            <meshStandardMaterial color={room.floorColor} />
+            <meshPhysicalMaterial color={room.floorColor} />
           </mesh>
         ))
       ) : (
         <mesh position={[w / 2, 0, d / 2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
           <planeGeometry args={[w, d]} />
-          <meshStandardMaterial color={room.floorColor} />
+          <meshPhysicalMaterial color={room.floorColor} />
         </mesh>
       )}
       {/* Back wall */}
       <mesh position={[w / 2, h / 2, 0]}>
         <boxGeometry args={[w, h, 0.08]} />
-        <meshStandardMaterial color={room.wallColor} />
+        <meshPhysicalMaterial color={room.wallColor} />
       </mesh>
       {/* Left wall */}
       <mesh position={[0, h / 2, d / 2]}>
         <boxGeometry args={[0.08, h, d]} />
-        <meshStandardMaterial color={room.wallColor} />
+        <meshPhysicalMaterial color={room.wallColor} />
       </mesh>
       {/* Right wall */}
       <mesh position={[w, h / 2, d / 2]}>
         <boxGeometry args={[0.08, h, d]} />
-        <meshStandardMaterial color={room.wallColor} />
+        <meshPhysicalMaterial color={room.wallColor} />
       </mesh>
       {/* Ceiling */}
       <mesh position={[w / 2, h, d / 2]} rotation={[Math.PI / 2, 0, 0]}>
         <planeGeometry args={[w, d]} />
-        <meshStandardMaterial color={room.wallColor} opacity={0.3} transparent />
+        <meshPhysicalMaterial color={room.wallColor} opacity={0.3} transparent />
       </mesh>
     </group>
   )
