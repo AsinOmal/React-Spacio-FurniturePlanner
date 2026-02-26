@@ -4,6 +4,8 @@ import { Stage, Layer, Rect, Line, Text, Group, Transformer } from 'react-konva'
 import { useDesign } from '../context/DesignContext'
 import SaveModal from '../components/SaveModal'
 import AuthModal from '../components/AuthModal'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import {
   ArrowLeft, Sun, Moon, Save, Box,
   Undo2, Redo2, Maximize, Grid3x3, Tags, Download,
@@ -353,15 +355,80 @@ export default function Editor2D() {
     setStagePos({ x: 0, y: 0 })
   }, [])
 
-  // ── Export PNG ───────────────────────────────────────────────
+  // ── Export PDF ───────────────────────────────────────────────
   const handleExport = useCallback(() => {
     if (!stageRef.current) return
-    const uri = stageRef.current.toDataURL({ mimeType: 'image/png', quality: 1, pixelRatio: 2 })
-    const a = document.createElement('a')
-    a.href = uri
-    a.download = 'spacio-design.png'
-    a.click()
-  }, [])
+    const stage = stageRef.current
+
+    // Temporarily reset zoom/pan to capture clean 1:1 image bounds
+    const oldScale = stage.scaleX()
+    const oldPos = stage.position()
+    stage.scale({ x: 1, y: 1 })
+    stage.position({ x: 0, y: 0 })
+
+    const cropW = room.width * SCALE + PAD * 2
+    const cropH = room.length * SCALE + PAD * 2
+
+    const dataUrl = stage.toDataURL({
+      mimeType: 'image/jpeg',
+      quality: 0.92,
+      pixelRatio: 2,
+      x: 0, y: 0, width: cropW, height: cropH
+    })
+
+    // Restore zoom/pan instantly
+    stage.scale({ x: oldScale, y: oldScale })
+    stage.position(oldPos)
+
+    const doc = new jsPDF('landscape', 'mm', 'a4')
+
+    // Header
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(22)
+    doc.text('Spacio Floor Plan Report', 14, 20)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.setTextColor(100)
+    doc.text(`Room Dimensions: ${room.width}m × ${room.length}m`, 14, 28)
+    doc.text(`Room Shape: ${room.shape}`, 14, 34)
+    doc.text(`Total Furniture Items: ${furniture.length}`, 14, 40)
+
+    // Image Layout (left side)
+    const maxImgW = 160
+    const maxImgH = 150
+    const ratio = Math.min(maxImgW / cropW, maxImgH / cropH)
+    const renderW = cropW * ratio
+    const renderH = cropH * ratio
+
+    doc.addImage(dataUrl, 'JPEG', 14, 48, renderW, renderH)
+
+    // Bill of Materials Table (right side)
+    const counts = {}
+    furniture.forEach(f => {
+      const key = `${f.type} (${f.color})`
+      if (!counts[key]) counts[key] = { type: f.type, color: f.color, count: 0 }
+      counts[key].count++
+    })
+
+    const tableData = Object.values(counts).map(row => [
+      row.type,
+      row.color,
+      row.count.toString()
+    ])
+
+    autoTable(doc, {
+      startY: 48,
+      margin: { left: 185, right: 14 },
+      head: [['Item Type', 'Finish', 'Qty']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [26, 39, 68] },
+      styles: { fontSize: 9 }
+    })
+
+    doc.save('spacio-floor-plan.pdf')
+  }, [room, furniture])
 
   return (
     <div className="editor">
@@ -444,8 +511,8 @@ export default function Editor2D() {
           <button
             className="tool-btn"
             onClick={handleExport}
-            title="Export as PNG"
-          ><Download size={14} /> Export</button>
+            title="Export PDF Report"
+          ><Download size={14} /> Export PDF</button>
         </div>
       </div>
 
