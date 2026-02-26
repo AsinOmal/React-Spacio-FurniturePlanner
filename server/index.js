@@ -22,7 +22,10 @@ app.get('/api/health', (req, res) => {
 
 // Routes
 const authRoutes = require('./routes/auth')
+const designRoutes = require('./routes/designs')
+
 app.use('/api/auth', authRoutes)
+app.use('/api/designs', designRoutes)
 
 // Start Server
 app.listen(PORT, () => {
