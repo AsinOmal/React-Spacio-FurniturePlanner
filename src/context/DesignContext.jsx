@@ -14,10 +14,7 @@ export function DesignProvider({ children }) {
 
   const [furniture, setFurniture] = useState([])
   const [selectedId, setSelectedId] = useState(null)
-  const [savedDesigns, setSavedDesigns] = useState(() => {
-    const saved = localStorage.getItem('savedDesigns')
-    return saved ? JSON.parse(saved) : []
-  })
+  const [savedDesigns, setSavedDesigns] = useState([])
 
   // ── Undo / Redo history ──────────────────────────────────────
   const historyRef = useRef([[]])   // array of furniture snapshots
@@ -49,33 +46,51 @@ export function DesignProvider({ children }) {
   const canUndo = () => historyIdxRef.current > 0
   const canRedo = () => historyIdxRef.current < historyRef.current.length - 1
 
-  // ── Persist designs ──────────────────────────────────────────
-  useEffect(() => {
-    try {
-      localStorage.setItem('savedDesigns', JSON.stringify(savedDesigns))
-    } catch (e) {
-      console.warn('Spacio: could not save designs to localStorage', e)
+  // ── Cloud Persisted Designs ──────────────────────────────────
+  const fetchDesigns = useCallback(async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      setSavedDesigns([])
+      return
     }
-  }, [savedDesigns])
+    try {
+      const res = await fetch('http://localhost:5000/api/designs', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setSavedDesigns(data)
+      }
+    } catch (e) {
+      console.error('Failed to fetch designs', e)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchDesigns()
+  }, [fetchDesigns])
 
   // ── Design save / load / delete ──────────────────────────────
-  const saveDesign = (name) => {
-    const design = {
-      id: Date.now(),
-      name,
-      room,
-      furniture,
-      createdAt: new Date().toISOString()
-    }
-    setSavedDesigns(prev => {
-      const existing = prev.findIndex(d => d.name === name)
-      if (existing >= 0) {
-        const updated = [...prev]
-        updated[existing] = design
-        return updated
+  const saveDesign = async (name) => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    try {
+      const res = await fetch('http://localhost:5000/api/designs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ name, room, furniture })
+      })
+
+      if (res.ok) {
+        fetchDesigns() // Refresh the list from the server
       }
-      return [...prev, design]
-    })
+    } catch (e) {
+      console.error('Failed to save design', e)
+    }
   }
 
   const loadDesign = (design) => {
@@ -87,8 +102,22 @@ export function DesignProvider({ children }) {
     historyIdxRef.current = 0
   }
 
-  const deleteDesign = (id) => {
-    setSavedDesigns(prev => prev.filter(d => d.id !== id))
+  const deleteDesign = async (id) => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/designs/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      if (res.ok) {
+        fetchDesigns() // Refresh the list
+      }
+    } catch (e) {
+      console.error('Failed to delete design', e)
+    }
   }
 
   // ── Furniture CRUD (all push to history) ─────────────────────

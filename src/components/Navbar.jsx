@@ -13,7 +13,7 @@ export default function Navbar() {
     const { setRoom, setFurniture } = useDesign()
 
     const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
-    const loggedIn = localStorage.getItem('isLoggedIn') === 'true'
+    const loggedIn = !!localStorage.getItem('token')
 
     const [authOpen, setAuthOpen] = useState(false)
 
@@ -27,7 +27,8 @@ export default function Navbar() {
     }
 
     const handleLogout = () => {
-        localStorage.removeItem('isLoggedIn')
+        localStorage.removeItem('token')
+        localStorage.removeItem('userEmail')
         localStorage.removeItem('isGuest')
         navigate('/')
     }

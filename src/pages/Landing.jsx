@@ -25,7 +25,7 @@ const FEATURES = [
 
 export default function Landing() {
   const navigate = useNavigate()
-  const loggedIn = localStorage.getItem('isLoggedIn') === 'true'
+  const loggedIn = !!localStorage.getItem('token')
   const [authOpen, setAuthOpen] = useState(false)
   const [authView, setAuthView] = useState('choice')
 

@@ -9,15 +9,15 @@ import Preview3D from './pages/Preview3D'
 
 // Requires full login (Dashboard)
 function PrivateRoute({ children }) {
-  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
-  return isLoggedIn ? children : <Navigate to="/" />
+  const hasToken = !!localStorage.getItem('token')
+  return hasToken ? children : <Navigate to="/" />
 }
 
 // Allows guests and logged-in users (Room Setup, Editor, 3D)
 function DesignRoute({ children }) {
-  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
+  const hasToken = !!localStorage.getItem('token')
   const isGuest = localStorage.getItem('isGuest') === 'true'
-  return (isLoggedIn || isGuest) ? children : <Navigate to="/" />
+  return (hasToken || isGuest) ? children : <Navigate to="/" />
 }
 
 export default function App() {

@@ -3,18 +3,32 @@ import { useNavigate } from 'react-router-dom'
 import './Login.css'
 
 export default function Login() {
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
-    if (username === 'designer' && password === 'furniture123') {
-      localStorage.setItem('isLoggedIn', 'true')
+    setError('')
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Login failed')
+        return
+      }
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('userEmail', data.email)
+      localStorage.removeItem('isGuest')
       navigate('/dashboard')
-    } else {
-      setError('Invalid credentials. Please try again.')
+    } catch (err) {
+      console.error(err)
+      setError('Connection error. Is the server running?')
     }
   }
 
@@ -28,12 +42,12 @@ export default function Login() {
         </div>
         <form onSubmit={handleLogin} className="login-form">
           <div className="form-group">
-            <label>Username</label>
+            <label>Email</label>
             <input
-              type="text"
-              value={username}
-              onChange={e => { setUsername(e.target.value); setError('') }}
-              placeholder="Enter your username"
+              type="email"
+              value={email}
+              onChange={e => { setEmail(e.target.value); setError('') }}
+              placeholder="Enter your email"
               required
             />
           </div>
@@ -50,7 +64,7 @@ export default function Login() {
           {error && <p className="error-msg">⚠️ {error}</p>}
           <button type="submit" className="btn-primary">Login</button>
         </form>
-        <p className="login-hint">Demo — Username: <strong>designer</strong> · Password: <strong>furniture123</strong></p>
+        <p className="login-hint">Register an account via the homepage or login if you already have one.</p>
         <button className="btn-back-landing" onClick={() => navigate('/')}>← Back to Spacio</button>
       </div>
     </div>

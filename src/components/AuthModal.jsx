@@ -6,7 +6,8 @@ import './AuthModal.css'
 
 export default function AuthModal({ isOpen, onClose, initialView = 'choice' }) {
     const [view, setView] = useState(initialView)
-    const [username, setUsername] = useState('')
+    const [isRegister, setIsRegister] = useState(false)
+    const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const navigate = useNavigate()
@@ -14,15 +15,38 @@ export default function AuthModal({ isOpen, onClose, initialView = 'choice' }) {
 
     if (!isOpen) return null
 
-    const handleLogin = (e) => {
+    const handleAuth = async (e) => {
         e.preventDefault()
-        if (username === 'designer' && password === 'furniture123') {
-            localStorage.setItem('isLoggedIn', 'true')
-            localStorage.removeItem('isGuest')   // guest → full user
+        setError('')
+
+        const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login'
+
+        try {
+            const res = await fetch(`http://localhost:5000${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                setError(data.error || 'Authentication failed')
+                return
+            }
+
+            localStorage.setItem('token', data.token)
+            localStorage.setItem('userEmail', data.email)
+            localStorage.removeItem('isGuest')
+
             onClose()
             navigate('/dashboard')
-        } else {
-            setError('Invalid credentials. Please try again.')
+            // Add a small delay then reload to force DesignContext to re-fetch with new token
+            setTimeout(() => window.location.reload(), 100)
+
+        } catch (err) {
+            console.error(err)
+            setError('Server connection error. Is the backend running?')
         }
     }
 
@@ -65,17 +89,17 @@ export default function AuthModal({ isOpen, onClose, initialView = 'choice' }) {
                     <div className="auth-login-view">
                         <div className="auth-logo">
                             <span className="logo-icon">🛋️</span>
-                            <h2>Welcome Back</h2>
-                            <p>Sign in to save your designs</p>
+                            <h2>{isRegister ? 'Create Account' : 'Welcome Back'}</h2>
+                            <p>{isRegister ? 'Sign up to build your spaces' : 'Sign in to save your designs'}</p>
                         </div>
-                        <form onSubmit={handleLogin} className="auth-form">
+                        <form onSubmit={handleAuth} className="auth-form">
                             <div className="form-group">
-                                <label>Username</label>
+                                <label>Email</label>
                                 <input
-                                    type="text"
-                                    value={username}
-                                    onChange={e => { setUsername(e.target.value); setError('') }}
-                                    placeholder="Enter your username"
+                                    type="email"
+                                    value={email}
+                                    onChange={e => { setEmail(e.target.value); setError('') }}
+                                    placeholder="Enter your email"
                                     required
                                 />
                             </div>
@@ -90,9 +114,16 @@ export default function AuthModal({ isOpen, onClose, initialView = 'choice' }) {
                                 />
                             </div>
                             {error && <p className="error-msg">⚠️ {error}</p>}
-                            <button type="submit" className="auth-btn-primary">Log In</button>
+                            <button type="submit" className="auth-btn-primary">
+                                {isRegister ? 'Sign Up' : 'Log In'}
+                            </button>
                         </form>
-                        <p className="auth-hint">Demo — Username: <strong>designer</strong> · Password: <strong>furniture123</strong></p>
+                        <p className="auth-hint">
+                            {isRegister ? 'Already have an account? ' : "Don't have an account? "}
+                            <strong style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => setIsRegister(!isRegister)}>
+                                {isRegister ? 'Log In' : 'Sign Up'}
+                            </strong>
+                        </p>
 
                         {initialView === 'choice' && (
                             <button className="auth-btn-back" onClick={() => { setView('choice'); setError(''); }}>
