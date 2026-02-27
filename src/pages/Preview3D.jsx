@@ -1,6 +1,6 @@
-import { useState, useRef, createContext, useContext } from 'react'
+import { useState, useRef, createContext, useContext, useMemo, Suspense } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls, PointerLockControls, KeyboardControls, useKeyboardControls } from '@react-three/drei'
+import { OrbitControls, PointerLockControls, KeyboardControls, useKeyboardControls, useGLTF } from '@react-three/drei'
 import { useNavigate } from 'react-router-dom'
 import { useDesign } from '../context/DesignContext'
 import { Home, Mouse, Sun, SunDim, Layers, Footprints, Box } from 'lucide-react'
@@ -412,6 +412,36 @@ const TYPE_HEIGHTS = {
   'Bookshelf': 1.80,
 }
 
+// ── Custom GLTF Model Renderer ────────────────────────────────
+function CustomGLTFModel({ url, targetWidth, targetDepth }) {
+  const { scene } = useGLTF(url)
+  const clonedScene = useMemo(() => scene.clone(), [scene])
+
+  const [scale, yOffset] = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(clonedScene)
+    const size = new THREE.Vector3()
+    box.getSize(size)
+
+    const scaleX = targetWidth / size.x
+    const scaleZ = targetDepth / size.z
+    const finalScale = Math.min(scaleX, scaleZ) * 0.9 // 90% to afford some padding
+
+    // Y offset to rest on origin
+    const yOffset = -box.min.y * finalScale
+
+    clonedScene.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true
+        child.receiveShadow = true
+      }
+    })
+
+    return [finalScale, yOffset]
+  }, [clonedScene, targetWidth, targetDepth])
+
+  return <primitive object={clonedScene} scale={[scale, scale, scale]} position={[0, yOffset, 0]} />
+}
+
 function FurniturePiece({ item }) {
   const fw = item.width * item.scale
   const fd = item.height * item.scale
@@ -421,25 +451,37 @@ function FurniturePiece({ item }) {
   const z = (item.y - PAD) / SCALE
   const rotY = -(item.rotation * Math.PI) / 180
 
-  // Each furniture function renders in LOCAL space, centred at 0,0,0, from y=0 up
   const props = { fw, fd, fh, color: item.color }
   let Shape
-  switch (item.type) {
-    case 'Chair': Shape = <Chair3D        {...props} />; break
-    case 'Dining Table': Shape = <DiningTable3D  {...props} />; break
-    case 'Sofa': Shape = <Sofa3D         {...props} />; break
-    case 'Bed': Shape = <Bed3D          {...props} />; break
-    case 'Side Table': Shape = <SideTable3D    {...props} />; break
-    case 'Wardrobe': Shape = <Wardrobe3D     {...props} />; break
-    case 'Desk': Shape = <Desk3D         {...props} />; break
-    case 'Bookshelf': Shape = <Bookshelf3D    {...props} />; break
-    default:
-      Shape = (
+  if (item.type === 'Custom Model') {
+    Shape = (
+      <Suspense fallback={
         <mesh castShadow>
           <boxGeometry args={[fw, fh, fd]} />
-          <Mat color={item.color} />
+          <Mat color="#cccccc" />
         </mesh>
-      )
+      }>
+        <CustomGLTFModel url={item.modelUrl} targetWidth={fw} targetDepth={fd} />
+      </Suspense>
+    )
+  } else {
+    switch (item.type) {
+      case 'Chair': Shape = <Chair3D        {...props} />; break
+      case 'Dining Table': Shape = <DiningTable3D  {...props} />; break
+      case 'Sofa': Shape = <Sofa3D         {...props} />; break
+      case 'Bed': Shape = <Bed3D          {...props} />; break
+      case 'Side Table': Shape = <SideTable3D    {...props} />; break
+      case 'Wardrobe': Shape = <Wardrobe3D     {...props} />; break
+      case 'Desk': Shape = <Desk3D         {...props} />; break
+      case 'Bookshelf': Shape = <Bookshelf3D    {...props} />; break
+      default:
+        Shape = (
+          <mesh castShadow>
+            <boxGeometry args={[fw, fh, fd]} />
+            <Mat color={item.color} />
+          </mesh>
+        )
+    }
   }
 
   return (

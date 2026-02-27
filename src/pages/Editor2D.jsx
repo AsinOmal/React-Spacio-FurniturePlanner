@@ -9,7 +9,7 @@ import autoTable from 'jspdf-autotable'
 import {
   ArrowLeft, Sun, Moon, Save, Box,
   Undo2, Redo2, Maximize, Grid3x3, Tags, Download,
-  Trash2, Pointer, Package, Ruler, PenTool
+  Trash2, Pointer, Package, Ruler, PenTool, Upload
 } from 'lucide-react'
 import './Editor2D.css'
 
@@ -226,6 +226,8 @@ export default function Editor2D() {
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
   const [stageScale, setStageScale] = useState(1.4)
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 })
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef(null)
   const [containerSize, setContainerSize] = useState({ w: 800, h: 600 })
   const ZOOM_MIN = 0.4, ZOOM_MAX = 3, ZOOM_STEP = 1.12
 
@@ -279,6 +281,56 @@ export default function Editor2D() {
     const node = stage?.findOne('#item-' + selectedId)
     trRef.current.nodes(node ? [node] : [])
   }, [selectedId, furniture])
+
+  // ── Auto-save to cloud ───────────────────────
+  useEffect(() => {
+    if (showSave) saveDesign('My Room Layout')
+  }, [showSave, saveDesign])
+
+  // ── Custom Model Upload ──────────────────────
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const ext = file.name.split('.').pop().toLowerCase()
+    if (!['glb', 'gltf'].includes(ext)) {
+      alert('Only .glb and .gltf files are supported.')
+      return
+    }
+
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('model', file)
+
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/models/upload', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData
+      })
+
+      if (!res.ok) throw new Error('Failed to upload model')
+      const data = await res.json()
+
+      // Add as custom furniture item
+      addFurniture({
+        type: 'Custom Model',
+        emoji: '📦',
+        width: 1,
+        height: 1,
+        defaultColor: '#A020F0',
+        modelUrl: data.url
+      })
+
+    } catch (err) {
+      console.error(err)
+      alert('Error uploading model. Check console for details.')
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   // ── Keyboard shortcuts: Undo / Redo ──────────────────────────
   useEffect(() => {
@@ -640,6 +692,29 @@ export default function Editor2D() {
                 <span className="lib-size">{item.width}×{item.height}m</span>
               </button>
             ))}
+          </div>
+
+          <div style={{ marginTop: '16px', padding: '0 8px' }}>
+            <input
+              type="file"
+              accept=".glb,.gltf"
+              style={{ display: 'none' }}
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+            />
+            <button
+              className="btn-topbar"
+              style={{ width: '100%', justifyContent: 'center', backgroundColor: 'var(--bg-card)', border: '1px dashed var(--border)' }}
+              disabled={isUploading}
+              onClick={() => fileInputRef.current?.click()}
+              title="Upload a custom .glb or .gltf 3D model"
+            >
+              <Upload size={16} />
+              {isUploading ? 'Uploading...' : 'Upload 3D Model'}
+            </button>
+            <div style={{ fontSize: 11, color: 'var(--text-sec)', textAlign: 'center', marginTop: 8 }}>
+              Supports .glb / .gltf (up to 50MB)
+            </div>
           </div>
         </div>
 
