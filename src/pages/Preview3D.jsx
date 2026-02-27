@@ -1,4 +1,4 @@
-import { useState, useRef, createContext, useContext, useMemo, Suspense } from 'react'
+import { useState, useRef, createContext, useContext, useMemo, Suspense, Component } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, PointerLockControls, KeyboardControls, useKeyboardControls, useGLTF } from '@react-three/drei'
 import { useNavigate } from 'react-router-dom'
@@ -412,6 +412,26 @@ const TYPE_HEIGHTS = {
   'Bookshelf': 1.80,
 }
 
+// ── Model Error Boundary ──────────────────────────────────────
+class ModelErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false }
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true }
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('Custom 3D model failed to load:', error, errorInfo)
+  }
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback
+    }
+    return this.props.children
+  }
+}
+
 // ── Custom GLTF Model Renderer ────────────────────────────────
 function CustomGLTFModel({ url, targetWidth, targetDepth }) {
   const { scene } = useGLTF(url)
@@ -455,14 +475,21 @@ function FurniturePiece({ item }) {
   let Shape
   if (item.type === 'Custom Model') {
     Shape = (
-      <Suspense fallback={
+      <ModelErrorBoundary fallback={
         <mesh castShadow>
           <boxGeometry args={[fw, fh, fd]} />
-          <Mat color="#cccccc" />
+          <Mat color="#ff3333" /> {/* Red box for error */}
         </mesh>
       }>
-        <CustomGLTFModel url={item.modelUrl} targetWidth={fw} targetDepth={fd} />
-      </Suspense>
+        <Suspense fallback={
+          <mesh castShadow>
+            <boxGeometry args={[fw, fh, fd]} />
+            <Mat color="#cccccc" /> {/* Grey box for loading */}
+          </mesh>
+        }>
+          <CustomGLTFModel url={item.modelUrl} targetWidth={fw} targetDepth={fd} />
+        </Suspense>
+      </ModelErrorBoundary>
     )
   } else {
     switch (item.type) {
