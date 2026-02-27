@@ -4,7 +4,7 @@ import { useDesign } from '../context/DesignContext'
 import Navbar from '../components/Navbar'
 import './RoomSetup.css'
 
-const SHAPES = ['Rectangle', 'Square', 'L-Shape']
+const SHAPES = ['Rectangle', 'Square', 'L-Shape', 'Custom']
 
 export default function RoomSetup() {
   const navigate = useNavigate()
@@ -73,7 +73,9 @@ export default function RoomSetup() {
 
           <form onSubmit={handleSubmit} className="rs-form">
             {/* Dimensions */}
-            <div className="rs-section-label">Dimensions</div>
+            <div className="rs-section-label">
+              {form.shape === 'Custom' ? 'Canvas Area (metres)' : 'Dimensions'}
+            </div>
             <div className="rs-row">
               <div className="rs-field">
                 <label>Width (metres)</label>
@@ -109,7 +111,7 @@ export default function RoomSetup() {
                   onClick={() => updateShape(s)}
                 >
                   <span className="rs-shape-icon">
-                    {s === 'Rectangle' ? '▬' : s === 'Square' ? '■' : '⌐'}
+                    {s === 'Rectangle' ? '▬' : s === 'Square' ? '■' : s === 'L-Shape' ? '⌐' : '✎'}
                   </span>
                   <span>{s}</span>
                 </button>
@@ -164,6 +166,20 @@ export default function RoomSetup() {
                       strokeWidth={8}
                       strokeLinejoin="round"
                     />
+                  ) : form.shape === 'Custom' ? (
+                    <g>
+                      <rect
+                        x={10} y={10}
+                        width={pW} height={pH}
+                        fill="none"
+                        stroke="var(--s-border)"
+                        strokeWidth={2}
+                        strokeDasharray="4,4"
+                      />
+                      <text x={pW / 2 + 10} y={pH / 2 + 10} fontSize={14} fill="var(--s-text-3)" textAnchor="middle" alignmentBaseline="middle">
+                        Draw your walls in Editor
+                      </text>
+                    </g>
                   ) : (
                     <rect
                       x={10} y={10}

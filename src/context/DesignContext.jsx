@@ -9,7 +9,8 @@ export function DesignProvider({ children }) {
     length: 3,
     shape: 'Rectangle',
     wallColor: '#F5F5DC',
-    floorColor: '#D2B48C'
+    floorColor: '#D2B48C',
+    customPolygon: []
   })
 
   const [furniture, setFurniture] = useState([])

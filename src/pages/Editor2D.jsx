@@ -9,7 +9,7 @@ import autoTable from 'jspdf-autotable'
 import {
   ArrowLeft, Sun, Moon, Save, Box,
   Undo2, Redo2, Maximize, Grid3x3, Tags, Download,
-  Trash2, Pointer, Package, Ruler
+  Trash2, Pointer, Package, Ruler, PenTool
 } from 'lucide-react'
 import './Editor2D.css'
 
@@ -205,9 +205,13 @@ export default function Editor2D() {
     selectedId, setSelectedId,
     addFurniture, updateFurniture, deleteFurniture,
     commitFurnitureHistory,
-    saveDesign,
+    setRoom, saveDesign,
     undo, redo, canUndo, canRedo,
   } = useDesign()
+
+  const [isDrawingWall, setIsDrawingWall] = useState(room.shape === 'Custom' && (!room.customPolygon || room.customPolygon.length === 0))
+  const [draftPolygon, setDraftPolygon] = useState([])
+  const [currMouse, setCurrMouse] = useState(null)
 
   const stageRef = useRef()
   const trRef = useRef()
@@ -302,6 +306,90 @@ export default function Editor2D() {
     updateFurniture(item.id, clamped)
     commitFurnitureHistory()
   }, [snapOn, room, updateFurniture, commitFurnitureHistory])
+
+  // ── Poly Draw Handlers ───────────────────────────────────────
+  const handleStageClick = useCallback((e) => {
+    if (e.target === e.target.getStage()) setSelectedId(null)
+
+    if (isDrawingWall) {
+      const stage = e.target.getStage()
+      const pos = stage.getPointerPosition()
+      let x = (pos.x - stage.x()) / stage.scaleX()
+      let y = (pos.y - stage.y()) / stage.scaleX()
+
+      if (snapOn) {
+        x = snapGrid(x)
+        y = snapGrid(y)
+      } else if (e.evt.shiftKey && draftPolygon.length > 0) {
+        // Orthogonal snap (90 or 45 deg)
+        const last = draftPolygon[draftPolygon.length - 1]
+        const dx = Math.abs(x - last.x)
+        const dy = Math.abs(y - last.y)
+        if (dx > dy * 2) y = last.y
+        else if (dy > dx * 2) x = last.x
+        else {
+          const signX = Math.sign(x - last.x)
+          const signY = Math.sign(y - last.y)
+          const avg = (dx + dy) / 2
+          x = last.x + signX * avg
+          y = last.y + signY * avg
+        }
+      }
+
+      // If clicked near first point, close polygon
+      if (draftPolygon.length > 2) {
+        const first = draftPolygon[0]
+        const dist = Math.hypot(x - first.x, y - first.y)
+        if (dist < 20 / stage.scaleX()) { // snap threshold
+          setRoom(prev => ({ ...prev, customPolygon: draftPolygon }))
+          setIsDrawingWall(false)
+          setDraftPolygon([])
+          setCurrMouse(null)
+          return
+        }
+      }
+
+      setDraftPolygon(prev => [...prev, { x, y }])
+    }
+  }, [isDrawingWall, snapOn, draftPolygon, setRoom, setSelectedId])
+
+  const handleStageMouseMove = useCallback((e) => {
+    if (!isDrawingWall) return
+    const stage = e.target.getStage()
+    const pos = stage.getPointerPosition()
+    let x = (pos.x - stage.x()) / stage.scaleX()
+    let y = (pos.y - stage.y()) / stage.scaleX()
+
+    if (snapOn) {
+      x = snapGrid(x)
+      y = snapGrid(y)
+    } else if (e.evt.shiftKey && draftPolygon.length > 0) {
+      const last = draftPolygon[draftPolygon.length - 1]
+      const dx = Math.abs(x - last.x)
+      const dy = Math.abs(y - last.y)
+      if (dx > dy * 2) y = last.y
+      else if (dy > dx * 2) x = last.x
+      else {
+        const signX = Math.sign(x - last.x)
+        const signY = Math.sign(y - last.y)
+        const avg = (dx + dy) / 2
+        x = last.x + signX * avg
+        y = last.y + signY * avg
+      }
+    }
+
+    // Snap to first node if near
+    if (draftPolygon.length > 2) {
+      const first = draftPolygon[0]
+      const dist = Math.hypot(x - first.x, y - first.y)
+      if (dist < 20 / stage.scaleX()) {
+        x = first.x
+        y = first.y
+      }
+    }
+
+    setCurrMouse({ x, y })
+  }, [isDrawingWall, snapOn, draftPolygon])
 
   // ── Transform end: persist scale/rotation from canvas handles ─
   const handleTransformEnd = useCallback((item, e) => {
@@ -499,6 +587,17 @@ export default function Editor2D() {
             onClick={() => setSnapOn(s => !s)}
             title="Snap to Grid"
           ><Maximize size={14} /> Snap {snapOn ? 'ON' : 'OFF'}</button>
+          {room.shape === 'Custom' && (
+            <button
+              className={`tool-btn ${isDrawingWall ? 'tool-btn--active' : ''}`}
+              onClick={() => {
+                setIsDrawingWall(true)
+                setDraftPolygon([])
+                setCurrMouse(null)
+              }}
+              title="Draw Custom Walls"
+            ><PenTool size={14} /> Draw Walls</button>
+          )}
           <button
             className={`tool-btn ${showGrid ? 'tool-btn--active' : ''}`}
             onClick={() => setShowGrid(s => !s)}
@@ -557,20 +656,46 @@ export default function Editor2D() {
                 scaleX={stageScale}
                 scaleY={stageScale}
                 onWheel={handleWheel}
-                onClick={e => { if (e.target === e.target.getStage()) setSelectedId(null) }}
-                style={{ background: 'white', borderRadius: 8, boxShadow: 'var(--sh-lift)' }}
+                onClick={handleStageClick}
+                onMouseMove={handleStageMouseMove}
+                style={{ background: 'white', borderRadius: 8, boxShadow: 'var(--sh-lift)', cursor: isDrawingWall ? 'crosshair' : 'default' }}
               >
                 <Layer>
                   {/* Floor */}
-                  {isLShape ? (
+                  {room.shape === 'Custom' && room.customPolygon && room.customPolygon.length > 2 ? (
+                    <Line
+                      points={room.customPolygon.flatMap(p => [p.x, p.y])}
+                      fill={room.floorColor} stroke={room.wallColor} strokeWidth={14}
+                      closed
+                      lineJoin="round"
+                    />
+                  ) : isLShape ? (
                     lRects.map((r, i) => (
                       <Rect key={i} x={r.x} y={r.y} width={r.w} height={r.h}
                         fill={room.floorColor} stroke={room.wallColor} strokeWidth={14} />
                     ))
-                  ) : (
+                  ) : room.shape !== 'Custom' ? (
                     <Rect x={PAD} y={PAD}
                       width={room.width * SCALE} height={room.length * SCALE}
-                      fill={room.floorColor} stroke={room.wallColor} strokeWidth={14} />
+                      fill={room.floorColor} stroke={room.wallColor} strokeWidth={14} rx={4} />
+                  ) : null}
+
+                  {/* Render Draft Polygon */}
+                  {isDrawingWall && (
+                    <Group listening={false}>
+                      {draftPolygon.length > 0 && currMouse && (
+                        <Line
+                          points={[...draftPolygon.flatMap(p => [p.x, p.y]), currMouse.x, currMouse.y]}
+                          stroke="#2563eb" strokeWidth={4} dash={[8, 8]}
+                        />
+                      )}
+                      {draftPolygon.map((p, i) => (
+                        <Rect key={i} x={p.x - 4} y={p.y - 4} width={8} height={8} fill="white" stroke="#2563eb" strokeWidth={2} cornerRadius={4} />
+                      ))}
+                      {currMouse && (
+                        <Rect x={currMouse.x - 4} y={currMouse.y - 4} width={8} height={8} fill="white" stroke="#2563eb" strokeWidth={2} cornerRadius={4} />
+                      )}
+                    </Group>
                   )}
 
                   {/* Floor grid overlay */}

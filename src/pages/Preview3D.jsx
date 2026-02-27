@@ -457,10 +457,51 @@ function Room({ room, showWalls }) {
   const d = room.length
   const h = 2.8
   const isLShape = room.shape === 'L-Shape'
+  const isCustom = room.shape === 'Custom' && room.customPolygon && room.customPolygon.length > 2
+
+  let customShape = null
+  let customWalls = []
+  if (isCustom) {
+    customShape = new THREE.Shape()
+    const pts = room.customPolygon.map(p => ({
+      x: (p.x - PAD) / SCALE,
+      z: (p.y - PAD) / SCALE
+    }))
+    customShape.moveTo(pts[0].x, -pts[0].z)
+    for (let i = 1; i < pts.length; i++) {
+      customShape.lineTo(pts[i].x, -pts[i].z)
+    }
+
+    if (showWalls) {
+      const WALL_THICKNESS = 0.08
+      for (let i = 0; i < pts.length; i++) {
+        const p1 = pts[i]
+        const p2 = pts[(i + 1) % pts.length]
+        const dx = p2.x - p1.x
+        const dz = p2.z - p1.z
+        const len = Math.hypot(dx, dz)
+        const cx = (p1.x + p2.x) / 2
+        const cz = (p1.z + p2.z) / 2
+        const rotY = -Math.atan2(dz, dx)
+
+        customWalls.push(
+          <mesh key={`cw-${i}`} position={[cx, h / 2, cz]} rotation={[0, rotY, 0]}>
+            <boxGeometry args={[len + WALL_THICKNESS, h, WALL_THICKNESS]} />
+            <meshPhysicalMaterial color={room.wallColor} />
+          </mesh>
+        )
+      }
+    }
+  }
 
   return (
     <group>
-      {isLShape ? (
+      {isCustom && customShape ? (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+          <shapeGeometry args={[customShape]} />
+          <meshPhysicalMaterial color={room.floorColor} side={THREE.DoubleSide} />
+        </mesh>
+      ) : isLShape ? (
         getLShapeRects3D(room).map((r, i) => (
           <mesh key={i} position={[r.x + r.w / 2, 0, r.z + r.d / 2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
             <planeGeometry args={[r.w, r.d]} />
@@ -473,30 +514,41 @@ function Room({ room, showWalls }) {
           <meshPhysicalMaterial color={room.floorColor} />
         </mesh>
       )}
+
       {/* Only render walls if showWalls is true */}
       {showWalls && (
-        <>
-          {/* Back wall */}
-          <mesh position={[w / 2, h / 2, 0]}>
-            <boxGeometry args={[w, h, 0.08]} />
-            <meshPhysicalMaterial color={room.wallColor} />
-          </mesh>
-          {/* Left wall */}
-          <mesh position={[0, h / 2, d / 2]}>
-            <boxGeometry args={[0.08, h, d]} />
-            <meshPhysicalMaterial color={room.wallColor} />
-          </mesh>
-          {/* Right wall */}
-          <mesh position={[w, h / 2, d / 2]}>
-            <boxGeometry args={[0.08, h, d]} />
-            <meshPhysicalMaterial color={room.wallColor} />
-          </mesh>
-          {/* Ceiling */}
-          <mesh position={[w / 2, h, d / 2]} rotation={[Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[w, d]} />
-            <meshPhysicalMaterial color={room.wallColor} opacity={0.3} transparent />
-          </mesh>
-        </>
+        isCustom ? (
+          <>
+            {customWalls}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, h, 0]} receiveShadow>
+              <shapeGeometry args={[customShape]} />
+              <meshPhysicalMaterial color={room.wallColor} opacity={0.3} transparent side={THREE.DoubleSide} />
+            </mesh>
+          </>
+        ) : (
+          <>
+            {/* Back wall */}
+            <mesh position={[w / 2, h / 2, 0]}>
+              <boxGeometry args={[w, h, 0.08]} />
+              <meshPhysicalMaterial color={room.wallColor} />
+            </mesh>
+            {/* Left wall */}
+            <mesh position={[0, h / 2, d / 2]}>
+              <boxGeometry args={[0.08, h, d]} />
+              <meshPhysicalMaterial color={room.wallColor} />
+            </mesh>
+            {/* Right wall */}
+            <mesh position={[w, h / 2, d / 2]}>
+              <boxGeometry args={[0.08, h, d]} />
+              <meshPhysicalMaterial color={room.wallColor} />
+            </mesh>
+            {/* Ceiling */}
+            <mesh position={[w / 2, h, d / 2]} rotation={[Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[w, d]} />
+              <meshPhysicalMaterial color={room.wallColor} opacity={0.3} transparent />
+            </mesh>
+          </>
+        )
       )}
     </group>
   )
