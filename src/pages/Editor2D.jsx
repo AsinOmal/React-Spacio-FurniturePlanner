@@ -313,9 +313,17 @@ export default function Editor2D() {
       if (!res.ok) throw new Error('Failed to upload model')
       const data = await res.json()
 
+      // Ask the user for a name for this model
+      const defaultName = file.name.replace(/\.[^/.]+$/, "") // strip extension
+      const customName = prompt('Enter a name for your custom 3D model:', defaultName)
+
+      // If user clicks Cancel, we can abort, or just use default. We'll use default or what they typed.
+      const finalName = customName ? customName.trim() : defaultName
+
       // Add as custom furniture item
       addFurniture({
         type: 'Custom Model',
+        label: finalName || 'Custom Model',  // we use label to display unique text in the Properties sidebar if it exists
         emoji: '📦',
         width: 1,
         height: 1,
@@ -593,7 +601,14 @@ export default function Editor2D() {
       {/* ── Top Bar ─────────────────────────────────────────── */}
       <div className="editor-topbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => navigate(isGuest ? '/' : '/dashboard')} className="btn-topbar">
+          <button
+            onClick={() => {
+              if (window.confirm("You may have unsaved changes. Are you sure you want to leave without saving?")) {
+                navigate(isGuest ? '/' : '/dashboard')
+              }
+            }}
+            className="btn-topbar"
+          >
             <ArrowLeft size={16} /> {isGuest ? 'Home' : 'Dashboard'}
           </button>
           <span className="topbar-logo">Spacio</span>
@@ -873,69 +888,72 @@ export default function Editor2D() {
           </div>
         </div>
 
-        {/* ── RIGHT: Properties ─────────────────────────────── */}
-        <div className="props-panel">
-          <h3>Properties</h3>
-          {selected ? (
-            <div className="props-content">
-              <div className="prop-name">{selected.type}</div>
-
-              <div className="prop-row">
-                <label>Colour</label>
-                <div className="color-row">
-                  <input type="color" value={selected.color}
-                    onChange={e => handlePropChange(selectedId, { color: e.target.value })}
-                    onBlur={handlePropCommit} />
-                  <span>{selected.color}</span>
+        {/* ── RIGHT: Properties Panel ─────────────────────────────── */}
+        <div className="prop-panel">
+          {selectedId && selected ? (
+            <>
+              <div className="prop-header">
+                <h3>{selected.label || selected.type}</h3>
+                <span className="prop-id">ID: {selected.id.substring(0, 4)}</span>
+              </div>
+              <div className="prop-body">
+                <div className="prop-row" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <label>Colour</label>
+                  <div className="color-row">
+                    <input type="color" value={selected.color}
+                      onChange={e => handlePropChange(selectedId, { color: e.target.value })}
+                      onBlur={handlePropCommit} />
+                    <span>{selected.color}</span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="prop-row">
-                <label>Material</label>
-                <select value={selected.material || 'Matte'}
-                  onChange={e => {
-                    handlePropChange(selectedId, { material: e.target.value })
-                    handlePropCommit()
-                  }}
-                  style={{ flex: 1, padding: '4px', borderRadius: '4px', border: '1px solid var(--s-border)', fontSize: '12px', background: 'var(--s-bg)', color: 'var(--s-text-1)' }}
-                >
-                  <option value="Matte">Matte</option>
-                  <option value="Wood">Wood</option>
-                  <option value="Fabric">Fabric</option>
-                  <option value="Leather">Leather</option>
-                  <option value="Metal">Metal</option>
-                  <option value="Plastic">Plastic</option>
-                  <option value="Glass">Glass</option>
-                </select>
-              </div>
+                <div className="prop-row">
+                  <label>Material</label>
+                  <select value={selected.material || 'Matte'}
+                    onChange={e => {
+                      handlePropChange(selectedId, { material: e.target.value })
+                      handlePropCommit()
+                    }}
+                    style={{ flex: 1, padding: '4px', borderRadius: '4px', border: '1px solid var(--s-border)', fontSize: '12px', background: 'var(--s-bg)', color: 'var(--s-text-1)' }}
+                  >
+                    <option value="Matte">Matte</option>
+                    <option value="Wood">Wood</option>
+                    <option value="Fabric">Fabric</option>
+                    <option value="Leather">Leather</option>
+                    <option value="Metal">Metal</option>
+                    <option value="Plastic">Plastic</option>
+                    <option value="Glass">Glass</option>
+                  </select>
+                </div>
 
-              <div className="prop-row">
-                <label>Scale — {selected.scale.toFixed(1)}×</label>
-                <input type="range" min="0.5" max="2.5" step="0.1"
-                  value={selected.scale}
-                  onChange={e => handlePropChange(selectedId, { scale: +e.target.value })}
-                  onMouseUp={handlePropCommit}
-                  onTouchEnd={handlePropCommit} />
-              </div>
+                <div className="prop-row">
+                  <label>Scale — {selected.scale.toFixed(1)}×</label>
+                  <input type="range" min="0.5" max="2.5" step="0.1"
+                    value={selected.scale}
+                    onChange={e => handlePropChange(selectedId, { scale: +e.target.value })}
+                    onMouseUp={handlePropCommit}
+                    onTouchEnd={handlePropCommit} />
+                </div>
 
-              <div className="prop-row">
-                <label>Rotate — {selected.rotation}°</label>
-                <input type="range" min="0" max="355" step="5"
-                  value={selected.rotation}
-                  onChange={e => handlePropChange(selectedId, { rotation: +e.target.value })}
-                  onMouseUp={handlePropCommit}
-                  onTouchEnd={handlePropCommit} />
-              </div>
+                <div className="prop-row">
+                  <label>Rotate — {selected.rotation}°</label>
+                  <input type="range" min="0" max="355" step="5"
+                    value={selected.rotation}
+                    onChange={e => handlePropChange(selectedId, { rotation: +e.target.value })}
+                    onMouseUp={handlePropCommit}
+                    onTouchEnd={handlePropCommit} />
+                </div>
 
-              <div className="prop-row">
-                <label>Size</label>
-                <span className="prop-val">{selected.width}m × {selected.height}m</span>
-              </div>
+                <div className="prop-row">
+                  <label>Size</label>
+                  <span className="prop-val">{selected.width}m × {selected.height}m</span>
+                </div>
 
-              <button onClick={() => deleteFurniture(selectedId)} className="btn-remove">
-                <Trash2 size={13} /> Remove Item
-              </button>
-            </div>
+                <button onClick={() => deleteFurniture(selectedId)} className="btn-remove">
+                  <Trash2 size={13} /> Remove Item
+                </button>
+              </div>
+            </>
           ) : (
             <div className="no-sel">
               <Pointer size={24} color="var(--s-text-3)" strokeWidth={1.5} />
@@ -949,12 +967,14 @@ export default function Editor2D() {
         </div>
       </div>
 
-      {showSave && (
-        <SaveModal
-          onSave={name => { saveDesign(name); setShowSave(false) }}
-          onCancel={() => setShowSave(false)}
-        />
-      )}
+      {
+        showSave && (
+          <SaveModal
+            onSave={name => { saveDesign(name); setShowSave(false) }}
+            onCancel={() => setShowSave(false)}
+          />
+        )
+      }
 
       {/* Login prompt for guests trying to Save */}
       <AuthModal
@@ -962,6 +982,6 @@ export default function Editor2D() {
         onClose={() => setShowLoginPrompt(false)}
         initialView="login"
       />
-    </div>
+    </div >
   )
 }
