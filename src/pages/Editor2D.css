@@ -167,16 +167,22 @@
 .editor-body {
   flex: 1;
   display: grid;
-  grid-template-columns: 260px 1fr 230px;
+  grid-template-columns: 280px 1fr 250px;
+  gap: 24px;
+  background: var(--s-surface-2);
   overflow: hidden;
+  padding: 24px;
 }
 
 /* ── Library Panel ── */
 .lib-panel {
   background: var(--s-surface);
-  padding: 14px;
-  border-right: 1px solid var(--s-border);
+  padding: 16px;
+  border: 1px solid var(--s-border);
+  border-radius: 20px;
   overflow-y: auto;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+  z-index: 10;
 }
 
 .lib-header { margin-bottom: 12px; }
@@ -290,10 +296,13 @@
 .props-panel {
   background: var(--s-surface);
   padding: 16px;
-  border-left: 1px solid var(--s-border);
+  border: 1px solid var(--s-border);
+  border-radius: 20px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+  z-index: 10;
 }
 
 .props-panel h3 {

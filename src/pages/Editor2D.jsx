@@ -916,7 +916,7 @@ export default function Editor2D() {
                         offsetX={iw / 2}
                         offsetY={ih / 2 - 6}
                         width={iw}
-                        text={item.type}
+                        text={item.label || item.type}
                         fontSize={11}
                         fill="rgba(255,255,255,0.92)"
                         align="center"
@@ -944,12 +944,12 @@ export default function Editor2D() {
         </div>
 
         {/* ── RIGHT: Properties Panel ─────────────────────────────── */}
-        <div className="prop-panel">
+        <div className="props-panel">
           {selectedId && selected ? (
             <>
-              <div className="prop-header">
+              <div className="prop-header" style={{ marginBottom: 12 }}>
                 <h3>{selected.label || selected.type}</h3>
-                <span className="prop-id">ID: {String(selected.id).substring(0, 4)}</span>
+                <span className="prop-id" style={{ fontSize: 11, color: 'var(--s-text-3)' }}>ID: {String(selected.id).substring(0, 4)}</span>
               </div>
               <div className="prop-body">
                 <div className="prop-row" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
