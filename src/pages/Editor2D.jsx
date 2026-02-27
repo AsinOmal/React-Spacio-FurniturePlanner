@@ -213,6 +213,7 @@ function CustomNameModal({ defaultName, onSubmit, onCancel }) {
           value={name}
           onChange={e => setName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && onSubmit(name.trim() || defaultName)}
+          style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--s-border)', background: 'var(--s-bg)', color: 'var(--s-text-1)', outline: 'none', fontSize: 14, marginBottom: 20, boxSizing: 'border-box' }}
         />
         <div className="modal-actions">
           <button className="btn-cancel" onClick={onCancel}>Cancel</button>
