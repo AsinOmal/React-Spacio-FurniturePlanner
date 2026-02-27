@@ -554,6 +554,20 @@ function Room({ room, showWalls }) {
   )
 }
 
+// ── Utility: Point in Polygon (Ray Casting) ────────────────────────
+function isPointInPolygon(point, vs) {
+  let x = point[0], y = point[1]
+  let inside = false
+  for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+    let xi = vs[i][0], yi = vs[i][1]
+    let xj = vs[j][0], yj = vs[j][1]
+    let intersect = ((yi > y) != (yj > y))
+      && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)
+    if (intersect) inside = !inside
+  }
+  return inside
+}
+
 // ── FPS Movement Controller ─────────────────────────────────────────
 function FpsController({ room }) {
   const [, get] = useKeyboardControls()
@@ -582,10 +596,21 @@ function FpsController({ room }) {
 
     // Basic collision (don't walk through walls)
     const PAD = 0.5 // keep half a meter from walls
-    if (camera.position.x < PAD) camera.position.x = PAD
-    if (camera.position.x > room.width - PAD) camera.position.x = room.width - PAD
-    if (camera.position.z < PAD) camera.position.z = PAD
-    if (camera.position.z > room.length - PAD) camera.position.z = room.length - PAD
+
+    if (room.shape === 'Custom' && room.customPolygon && room.customPolygon.length > 2) {
+      const poly = room.customPolygon.map(p => [(p.x - 40) / 80, (p.y - 40) / 80])
+      // If we stepped outside the polygon, push back to previous safe position
+      // For a robust implementation, you would calculate intersection, but for now we clamp securely
+      if (!isPointInPolygon([camera.position.x, camera.position.z], poly)) {
+        camera.translateX(-velocity.current.x)
+        camera.translateZ(-velocity.current.z)
+      }
+    } else {
+      if (camera.position.x < PAD) camera.position.x = PAD
+      if (camera.position.x > room.width - PAD) camera.position.x = room.width - PAD
+      if (camera.position.z < PAD) camera.position.z = PAD
+      if (camera.position.z > room.length - PAD) camera.position.z = room.length - PAD
+    }
   })
 
   return null
