@@ -203,18 +203,19 @@ function CustomNameModal({ defaultName, onSubmit, onCancel }) {
   const [name, setName] = useState(defaultName || '')
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
-        <h3>Name Your Custom Model</h3>
-        <p style={{ fontSize: 13, color: 'var(--text-sec)', marginBottom: 12 }}>Give this furniture piece a label so you can identify it.</p>
-        <input
-          autoFocus
-          className="modal-input"
-          placeholder="e.g. Eames Lounge Chair"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && onSubmit(name.trim() || defaultName)}
-          style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--s-border)', background: 'var(--s-bg)', color: 'var(--s-text-1)', outline: 'none', fontSize: 14, marginBottom: 20, boxSizing: 'border-box' }}
-        />
+      <div className="modal-card">
+        <h3 className="modal-title">Name Your Custom Model</h3>
+        <div className="modal-body">
+          <p style={{ fontSize: 14, color: 'var(--s-text-2)', marginBottom: 12 }}>Give this furniture piece a label so you can identify it.</p>
+          <input
+            autoFocus
+            type="text"
+            placeholder="e.g. Eames Lounge Chair"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && onSubmit(name.trim() || defaultName)}
+          />
+        </div>
         <div className="modal-actions">
           <button className="btn-cancel" onClick={onCancel}>Cancel</button>
           <button className="btn-confirm" onClick={() => onSubmit(name.trim() || defaultName)}>Add to Room</button>
@@ -227,14 +228,16 @@ function CustomNameModal({ defaultName, onSubmit, onCancel }) {
 function LeaveConfirmModal({ onConfirm, onCancel }) {
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
-        <h3>Unsaved Changes</h3>
-        <p style={{ fontSize: 14, color: 'var(--text-sec)', marginBottom: 20 }}>
-          You may have unsaved changes. Are you sure you want to leave without saving?
-        </p>
+      <div className="modal-card">
+        <h3 className="modal-title">Unsaved Changes</h3>
+        <div className="modal-body">
+          <p style={{ fontSize: 14, color: 'var(--s-text-2)', marginBottom: 0 }}>
+            You may have unsaved changes. Are you sure you want to leave without saving?
+          </p>
+        </div>
         <div className="modal-actions">
           <button className="btn-cancel" onClick={onCancel}>Stay Here</button>
-          <button className="btn-confirm" style={{ background: '#ef4444' }} onClick={onConfirm}>Leave Without Saving</button>
+          <button className="btn-danger" onClick={onConfirm}>Leave Without Saving</button>
         </div>
       </div>
     </div>
