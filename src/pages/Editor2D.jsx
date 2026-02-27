@@ -227,6 +227,9 @@ export default function Editor2D() {
   const [stageScale, setStageScale] = useState(1.4)
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 })
   const [isUploading, setIsUploading] = useState(false)
+  const [pendingUploadData, setPendingUploadData] = useState(null)
+  const [showCustomNameModal, setShowCustomNameModal] = useState(false)
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const fileInputRef = useRef(null)
   const [containerSize, setContainerSize] = useState({ w: 800, h: 600 })
   const ZOOM_MIN = 0.4, ZOOM_MAX = 3, ZOOM_STEP = 1.12
@@ -313,23 +316,11 @@ export default function Editor2D() {
       if (!res.ok) throw new Error('Failed to upload model')
       const data = await res.json()
 
-      // Ask the user for a name for this model
       const defaultName = file.name.replace(/\.[^/.]+$/, "") // strip extension
-      const customName = prompt('Enter a name for your custom 3D model:', defaultName)
 
-      // If user clicks Cancel, we can abort, or just use default. We'll use default or what they typed.
-      const finalName = customName ? customName.trim() : defaultName
-
-      // Add as custom furniture item
-      addFurniture({
-        type: 'Custom Model',
-        label: finalName || 'Custom Model',  // we use label to display unique text in the Properties sidebar if it exists
-        emoji: '📦',
-        width: 1,
-        height: 1,
-        defaultColor: '#A020F0',
-        modelUrl: data.url
-      })
+      // Open Custom Name Modal instead of browser prompt, save pending stuff to state
+      setPendingUploadData({ data, defaultName })
+      setShowCustomNameModal(true)
 
     } catch (err) {
       console.error(err)
@@ -338,6 +329,27 @@ export default function Editor2D() {
       setIsUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
+  }
+
+  const handleCustomNameSubmit = (finalName) => {
+    if (pendingUploadData) {
+      addFurniture({
+        type: 'Custom Model',
+        label: finalName || 'Custom Model',
+        emoji: '📦',
+        width: 1,
+        height: 1,
+        defaultColor: '#A020F0',
+        modelUrl: pendingUploadData.data.url
+      })
+    }
+    setShowCustomNameModal(false)
+    setPendingUploadData(null)
+  }
+
+  const handleCustomNameCancel = () => {
+    setShowCustomNameModal(false)
+    setPendingUploadData(null)
   }
 
   // ── Keyboard shortcuts: Undo / Redo ──────────────────────────
@@ -602,11 +614,7 @@ export default function Editor2D() {
       <div className="editor-topbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
-            onClick={() => {
-              if (window.confirm("You may have unsaved changes. Are you sure you want to leave without saving?")) {
-                navigate(isGuest ? '/' : '/dashboard')
-              }
-            }}
+            onClick={() => setShowLeaveConfirm(true)}
             className="btn-topbar"
           >
             <ArrowLeft size={16} /> {isGuest ? 'Home' : 'Dashboard'}
@@ -967,14 +975,27 @@ export default function Editor2D() {
         </div>
       </div>
 
-      {
-        showSave && (
-          <SaveModal
-            onSave={name => { saveDesign(name); setShowSave(false) }}
-            onCancel={() => setShowSave(false)}
-          />
-        )
-      }
+      {showSave && (
+        <SaveModal
+          onSave={name => { saveDesign(name); setShowSave(false) }}
+          onCancel={() => setShowSave(false)}
+        />
+      )}
+
+      {showLeaveConfirm && (
+        <LeaveConfirmModal
+          onConfirm={() => navigate(isGuest ? '/' : '/dashboard')}
+          onCancel={() => setShowLeaveConfirm(false)}
+        />
+      )}
+
+      {showCustomNameModal && pendingUploadData && (
+        <CustomNameModal
+          defaultName={pendingUploadData.defaultName}
+          onSubmit={handleCustomNameSubmit}
+          onCancel={handleCustomNameCancel}
+        />
+      )}
 
       {/* Login prompt for guests trying to Save */}
       <AuthModal
