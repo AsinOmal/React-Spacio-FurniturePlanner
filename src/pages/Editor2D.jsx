@@ -949,7 +949,7 @@ export default function Editor2D() {
             <>
               <div className="prop-header">
                 <h3>{selected.label || selected.type}</h3>
-                <span className="prop-id">ID: {selected.id.substring(0, 4)}</span>
+                <span className="prop-id">ID: {String(selected.id).substring(0, 4)}</span>
               </div>
               <div className="prop-body">
                 <div className="prop-row" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
