@@ -198,6 +198,49 @@ function MeasurementLines({ room }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// ── Local Modals ─────────────────────────────────────────────
+function CustomNameModal({ defaultName, onSubmit, onCancel }) {
+  const [name, setName] = useState(defaultName || '')
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h3>Name Your Custom Model</h3>
+        <p style={{ fontSize: 13, color: 'var(--text-sec)', marginBottom: 12 }}>Give this furniture piece a label so you can identify it.</p>
+        <input
+          autoFocus
+          className="modal-input"
+          placeholder="e.g. Eames Lounge Chair"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && onSubmit(name.trim() || defaultName)}
+        />
+        <div className="modal-actions">
+          <button className="btn-cancel" onClick={onCancel}>Cancel</button>
+          <button className="btn-confirm" onClick={() => onSubmit(name.trim() || defaultName)}>Add to Room</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function LeaveConfirmModal({ onConfirm, onCancel }) {
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h3>Unsaved Changes</h3>
+        <p style={{ fontSize: 14, color: 'var(--text-sec)', marginBottom: 20 }}>
+          You may have unsaved changes. Are you sure you want to leave without saving?
+        </p>
+        <div className="modal-actions">
+          <button className="btn-cancel" onClick={onCancel}>Stay Here</button>
+          <button className="btn-confirm" style={{ background: '#ef4444' }} onClick={onConfirm}>Leave Without Saving</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
 export default function Editor2D() {
   const navigate = useNavigate()
   const {
