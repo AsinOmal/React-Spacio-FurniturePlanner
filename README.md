@@ -2,8 +2,7 @@
 
 > **Build beautiful spaces at the speed of thought.**
 > A clean, precise web application for designing rooms in 2D and previewing them in real-time 3D — from bare walls to fully furnished spaces, in minutes.
-
-![Landing Page](./src/assets/landing-preview.png)
+<img width="1719" height="813" alt="Screenshot 2026-02-27 at 23 30 45" src="https://github.com/user-attachments/assets/54f38b54-ac4b-400e-8bef-b8a867834da3" />
 
 ---
 
