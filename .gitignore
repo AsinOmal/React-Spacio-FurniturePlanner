@@ -29,3 +29,6 @@ server/.env
 # Report documentation — keep local only
 REPORT_DOCUMENTATION.md
 docs/
+
+# Ignored uploads
+server/uploads/

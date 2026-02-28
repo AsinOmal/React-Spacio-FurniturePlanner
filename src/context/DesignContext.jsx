@@ -16,6 +16,8 @@ export function DesignProvider({ children }) {
   const [furniture, setFurniture] = useState([])
   const [selectedId, setSelectedId] = useState(null)
   const [savedDesigns, setSavedDesigns] = useState([])
+  const [currentDesignId, setCurrentDesignId] = useState(null)
+  const [currentDesignName, setCurrentDesignName] = useState('Untitled Design')
 
   // ── Undo / Redo history ──────────────────────────────────────
   const historyRef = useRef([[]])   // array of furniture snapshots
@@ -77,20 +79,40 @@ export function DesignProvider({ children }) {
     if (!token) return
 
     try {
-      const res = await fetch('/api/designs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ name, room, furniture })
-      })
+      let res;
+      if (currentDesignId) {
+        res = await fetch(`/api/designs/${currentDesignId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ name, room, furniture })
+        })
+      } else {
+        res = await fetch('/api/designs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ name, room, furniture })
+        })
+      }
 
       if (res.ok) {
+        const data = await res.json()
+        if (!currentDesignId) {
+          setCurrentDesignId(data._id)
+        }
+        setCurrentDesignName(data.name || name)
         fetchDesigns() // Refresh the list from the server
+        return true
       }
+      return false
     } catch (e) {
       console.error('Failed to save design', e)
+      return false
     }
   }
 
@@ -98,6 +120,8 @@ export function DesignProvider({ children }) {
     setRoom(design.room)
     setFurniture(design.furniture)
     setSelectedId(null)
+    setCurrentDesignId(design._id)
+    setCurrentDesignName(design.name)
     // Reset history for the loaded design
     historyRef.current = [design.furniture.map(f => ({ ...f }))]
     historyIdxRef.current = 0
@@ -177,6 +201,8 @@ export function DesignProvider({ children }) {
       furniture, setFurniture,
       selectedId, setSelectedId,
       savedDesigns,
+      currentDesignId, setCurrentDesignId,
+      currentDesignName, setCurrentDesignName,
       saveDesign, loadDesign, deleteDesign,
       addFurniture, updateFurniture, deleteFurniture, commitFurnitureHistory,
       undo, redo, canUndo, canRedo

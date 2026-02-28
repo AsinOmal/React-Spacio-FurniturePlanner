@@ -50,12 +50,13 @@ const SHAPE_ICON = { Rectangle: '▬', Square: '■', 'L-Shape': '⌐' }
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { savedDesigns, loadDesign, deleteDesign, setRoom, setFurniture } = useDesign()
+  const { savedDesigns, loadDesign, deleteDesign, setRoom, setFurniture, setCurrentDesignId } = useDesign()
   const [deleteTarget, setDeleteTarget] = useState(null)
 
   const handleNew = () => {
     setRoom({ width: 4, length: 3, shape: 'Rectangle', wallColor: '#F5F5DC', floorColor: '#D2B48C' })
     setFurniture([])
+    setCurrentDesignId(null)
     navigate('/room-setup')
   }
 

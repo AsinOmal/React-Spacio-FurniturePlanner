@@ -9,8 +9,11 @@ import autoTable from 'jspdf-autotable'
 import {
   ArrowLeft, Sun, Moon, Save, Box,
   Undo2, Redo2, Maximize, Grid3x3, Tags, Download,
-  Trash2, Pointer, Package, Ruler, PenTool, Upload
+  Trash2, Pointer, Package, Ruler, PenTool, Upload, Cuboid
 } from 'lucide-react'
+import { Canvas } from '@react-three/fiber'
+import { OrbitControls } from '@react-three/drei'
+import { Room as Room3D, FurniturePiece as FurniturePiece3D } from '../components/Scene3D'
 import './Editor2D.css'
 
 const SCALE = 80
@@ -225,19 +228,22 @@ function CustomNameModal({ defaultName, onSubmit, onCancel }) {
   )
 }
 
-function LeaveConfirmModal({ onConfirm, onCancel }) {
+function LeaveConfirmModal({ onConfirm, onCancel, onSaveAndLeave, isGuest }) {
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay" style={{ zIndex: 100 }}>
       <div className="modal-card">
         <h3 className="modal-title">Unsaved Changes</h3>
         <div className="modal-body">
           <p style={{ fontSize: 14, color: 'var(--s-text-2)', marginBottom: 0 }}>
-            You may have unsaved changes. Are you sure you want to leave without saving?
+            You may have unsaved changes. How would you like to proceed?
           </p>
         </div>
-        <div className="modal-actions">
+        <div className="modal-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', width: '100%' }}>
           <button className="btn-cancel" onClick={onCancel}>Stay Here</button>
-          <button className="btn-danger" onClick={onConfirm}>Leave Without Saving</button>
+          {!isGuest ? (
+            <button className="btn-primary" onClick={onSaveAndLeave}>Save & Leave</button>
+          ) : <div />}
+          <button className="btn-danger" style={{ gridColumn: '1 / -1' }} onClick={onConfirm}>Leave Without Saving</button>
         </div>
       </div>
     </div>
@@ -253,6 +259,7 @@ export default function Editor2D() {
     addFurniture, updateFurniture, deleteFurniture,
     commitFurnitureHistory,
     setRoom, saveDesign,
+    currentDesignId, currentDesignName,
     undo, redo, canUndo, canRedo,
   } = useDesign()
 
@@ -265,11 +272,13 @@ export default function Editor2D() {
   const containerRef = useRef()
   const [showSave, setShowSave] = useState(false)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const [showToast, setShowToast] = useState(false)
   const isGuest = localStorage.getItem('isGuest') === 'true'
   const [snapOn, setSnapOn] = useState(false)
   const [showLabels, setShowLabels] = useState(true)
   const [showDimensions, setShowDimensions] = useState(true)
   const [showGrid, setShowGrid] = useState(true)
+  const [showLivePreview, setShowLivePreview] = useState(false)
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
   const [stageScale, setStageScale] = useState(1.4)
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 })
@@ -332,10 +341,7 @@ export default function Editor2D() {
     trRef.current.nodes(node ? [node] : [])
   }, [selectedId, furniture])
 
-  // ── Auto-save to cloud ───────────────────────
-  useEffect(() => {
-    if (showSave) saveDesign('My Room Layout')
-  }, [showSave, saveDesign])
+
 
   // ── Custom Model Upload ──────────────────────
   const handleFileUpload = async (e) => {
@@ -677,7 +683,19 @@ export default function Editor2D() {
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           <button
-            onClick={() => isGuest ? setShowLoginPrompt(true) : setShowSave(true)}
+            onClick={async () => {
+              if (isGuest) {
+                setShowLoginPrompt(true)
+              } else if (currentDesignId) {
+                const success = await saveDesign(currentDesignName)
+                if (success) {
+                  setShowToast(true)
+                  setTimeout(() => setShowToast(false), 2500)
+                }
+              } else {
+                setShowSave(true)
+              }
+            }}
             className="btn-save"
             title={isGuest ? 'Log in to save your design' : 'Save design'}
           >
@@ -740,6 +758,16 @@ export default function Editor2D() {
             onClick={handleExport}
             title="Export PDF Report"
           ><Download size={14} /> Export PDF</button>
+
+          <div className="tool-divider" />
+
+          <button
+            className={`tool-btn ${showLivePreview ? 'tool-btn--active' : ''}`}
+            onClick={() => setShowLivePreview(s => !s)}
+            title="Toggle Live 3D Preview"
+          >
+            <Cuboid size={16} /> 3D View
+          </button>
         </div>
       </div>
 
@@ -941,6 +969,27 @@ export default function Editor2D() {
             </span>
             <button className="zoom-btn" onClick={() => setStageScale(s => Math.max(ZOOM_MIN, s / ZOOM_STEP))}>−</button>
           </div>
+
+          {/* Live 3D Preview Panel */}
+          {showLivePreview && (
+            <div className="live-preview-panel">
+              <Canvas
+                shadows
+                camera={{ position: [room.width / 2, Math.max(room.length, room.width), room.length * 1.8], fov: 50 }}
+                style={{ background: 'linear-gradient(180deg, #c9dde8 0%, #e8eff4 100%)' }}
+              >
+                <ambientLight intensity={0.55} />
+                <directionalLight position={[room.width * 1.2, 6, room.length * 1.2]} intensity={1.4} castShadow shadow-mapSize={[1024, 1024]} />
+                <pointLight position={[room.width / 2, 2.4, room.length / 2]} intensity={0.35} />
+                <hemisphereLight skyColor="#ddeeff" groundColor="#8a7060" intensity={0.4} />
+
+                <Room3D room={room} showWalls={true} />
+                {furniture.map(item => <FurniturePiece3D key={item.id} item={item} />)}
+
+                <OrbitControls target={[room.width / 2, 0.6, room.length / 2]} maxPolarAngle={Math.PI / 2.1} minDistance={1} maxDistance={22} />
+              </Canvas>
+            </div>
+          )}
         </div>
 
         {/* ── RIGHT: Properties Panel ─────────────────────────────── */}
@@ -1031,8 +1080,19 @@ export default function Editor2D() {
 
       {showLeaveConfirm && (
         <LeaveConfirmModal
+          isGuest={isGuest}
           onConfirm={() => navigate(isGuest ? '/' : '/dashboard')}
           onCancel={() => setShowLeaveConfirm(false)}
+          onSaveAndLeave={() => {
+            if (currentDesignId) {
+              saveDesign(currentDesignName).then(() => {
+                navigate('/dashboard')
+              })
+            } else {
+              setShowLeaveConfirm(false)
+              setShowSave(true)
+            }
+          }}
         />
       )}
 
@@ -1050,6 +1110,13 @@ export default function Editor2D() {
         onClose={() => setShowLoginPrompt(false)}
         initialView="login"
       />
+
+      {/* Save Toast Notification */}
+      {showToast && (
+        <div className="save-toast">
+          Design saved successfully!
+        </div>
+      )}
     </div >
   )
 }

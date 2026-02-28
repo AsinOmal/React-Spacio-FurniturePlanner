@@ -57,7 +57,27 @@ router.post('/', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Failed to save design' })
   }
 })
+// ── UPDATE A DESIGN ───────────────────────────────────────────
+router.put('/:id', authMiddleware, async (req, res) => {
+  try {
+    const { name, room, furniture, thumbnail } = req.body
 
+    const updatedDesign = await Design.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.userId },
+      { name, room, furniture, thumbnail, updatedAt: Date.now() },
+      { new: true }
+    )
+
+    if (!updatedDesign) {
+      return res.status(404).json({ error: 'Design not found' })
+    }
+
+    res.json(updatedDesign)
+  } catch (error) {
+    console.error('Error updating design:', error)
+    res.status(500).json({ error: 'Failed to update design' })
+  }
+})
 // ── DELETE A DESIGN ───────────────────────────────────────────
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
