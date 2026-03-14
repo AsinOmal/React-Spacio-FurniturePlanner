@@ -129,6 +129,22 @@
   gap: 6px;
 }
 
+.toolstrip-center {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 auto;
+}
+
+.btn-export-pdf {
+  border-color: var(--s-accent) !important;
+  color: var(--s-accent) !important;
+}
+.btn-export-pdf:hover {
+  background: var(--s-accent) !important;
+  color: #fff !important;
+}
+
 .tool-btn {
   font-family: var(--f-sans);
   font-size: 14px;
@@ -222,7 +238,16 @@
   background: var(--s-glow);
 }
 
-.lib-emoji { font-size: 22px; line-height: 1; }
+.lib-icon {
+  color: var(--s-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+.lib-item:hover .lib-icon {
+  transform: scale(1.1);
+}
 .lib-name {
   font-size: 10.5px;
   font-weight: 600;

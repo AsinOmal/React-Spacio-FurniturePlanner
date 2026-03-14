@@ -211,44 +211,82 @@ describe('undo / redo', () => {
 describe('design persistence', () => {
     beforeEach(() => {
         localStorage.clear()
-    })
-    it('TC-DC-19: saveDesign adds a design with the given name', () => {
-        const getCtx = renderWithContext(<></>)
-        act(() => { getCtx().addFurniture(CHAIR) })
-        act(() => { getCtx().saveDesign('My Bedroom') })
-        expect(getCtx().savedDesigns).toHaveLength(1)
-        expect(getCtx().savedDesigns[0].name).toBe('My Bedroom')
+        localStorage.setItem('token', 'fake-token')
+        
+        // Mock global fetch
+        global.fetch = vi.fn((url, options) => {
+            if (url.includes('/api/designs') && options?.method === 'DELETE') {
+                return Promise.resolve({ ok: true })
+            }
+            if (url.includes('/api/designs') && options?.method === 'POST') {
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({ _id: 'new-id', name: JSON.parse(options.body).name })
+                })
+            }
+            if (url.includes('/api/designs') && (!options || options.method === 'GET')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve([
+                        { _id: '1', name: 'My Bedroom', furniture: [CHAIR], room: { width: 4, length: 3 } },
+                        { _id: '2', name: 'TestDesign', furniture: [SOFA], room: { width: 4, length: 3 } }
+                    ])
+                })
+            }
+            return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+        })
     })
 
-    it('TC-DC-20: saving with same name overwrites the existing design', () => {
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+
+    it('TC-DC-19: saveDesign calls fetch POST when currentDesignId is null', async () => {
         const getCtx = renderWithContext(<></>)
         act(() => { getCtx().addFurniture(CHAIR) })
-        act(() => { getCtx().saveDesign('Office') })
-        act(() => { getCtx().addFurniture(SOFA) })
-        act(() => { getCtx().saveDesign('Office') })
-        expect(getCtx().savedDesigns).toHaveLength(1)
-        expect(getCtx().savedDesigns[0].furniture).toHaveLength(2)
+        await act(async () => { await getCtx().saveDesign('My Bedroom') })
+        
+        expect(global.fetch).toHaveBeenCalledWith('/api/designs', expect.objectContaining({
+            method: 'POST'
+        }))
+        expect(getCtx().currentDesignName).toBe('My Bedroom')
+    })
+
+    it('TC-DC-20: saving an existing design calls fetch PUT', async () => {
+        const getCtx = renderWithContext(<></>)
+        act(() => { getCtx().setCurrentDesignId('existing-id') })
+        await act(async () => { await getCtx().saveDesign('Office') })
+        
+        expect(global.fetch).toHaveBeenCalledWith('/api/designs/existing-id', expect.objectContaining({
+            method: 'PUT'
+        }))
     })
 
     it('TC-DC-21: loadDesign restores furniture and room from the saved design', () => {
         const getCtx = renderWithContext(<></>)
-        act(() => { getCtx().addFurniture(CHAIR) })
-        act(() => { getCtx().saveDesign('TestDesign') })
-        // Clear furniture
-        const chairId = getCtx().furniture[0].id
-        act(() => { getCtx().deleteFurniture(chairId) })
-        expect(getCtx().furniture).toHaveLength(0)
-        // Load it back
-        act(() => { getCtx().loadDesign(getCtx().savedDesigns[0]) })
+        
+        const mockDesign = {
+            _id: '1',
+            name: 'Test Room',
+            room: { width: 5, length: 5 },
+            furniture: [CHAIR]
+        }
+        
+        act(() => { getCtx().loadDesign(mockDesign) })
+        
         expect(getCtx().furniture).toHaveLength(1)
         expect(getCtx().furniture[0].type).toBe('Chair')
+        expect(getCtx().room.width).toBe(5)
+        expect(getCtx().currentDesignId).toBe('1')
+        expect(getCtx().currentDesignName).toBe('Test Room')
     })
 
-    it('TC-DC-22: deleteDesign removes the design from savedDesigns', () => {
+    it('TC-DC-22: deleteDesign calls fetch DELETE', async () => {
         const getCtx = renderWithContext(<></>)
-        act(() => { getCtx().saveDesign('ToDelete') })
-        const designId = getCtx().savedDesigns[0].id
-        act(() => { getCtx().deleteDesign(designId) })
-        expect(getCtx().savedDesigns).toHaveLength(0)
+        await act(async () => { await getCtx().deleteDesign('1') })
+        
+        expect(global.fetch).toHaveBeenCalledWith('/api/designs/1', expect.objectContaining({
+            method: 'DELETE'
+        }))
     })
 })

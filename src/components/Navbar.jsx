@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Sun, Moon, Plus, LogOut } from 'lucide-react'
+import { Sun, Moon, Plus, LogOut, Armchair } from 'lucide-react'
 import { useDesign } from '../context/DesignContext'
+import { logoutApi } from '../utils/api'
 import AuthModal from './AuthModal'
 import './Navbar.css'
 
@@ -26,7 +27,8 @@ export default function Navbar() {
         setDark(next)
     }
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        await logoutApi()
         localStorage.removeItem('token')
         localStorage.removeItem('userEmail')
         localStorage.removeItem('isGuest')
@@ -41,7 +43,10 @@ export default function Navbar() {
 
     return (
         <nav className="sp-nav">
-            <span className="sp-logo" onClick={() => navigate('/')}>Spacio</span>
+            <div className="sp-logo" onClick={() => navigate('/')} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Armchair size={20} color="var(--s-accent)" />
+                <span>Spacio</span>
+            </div>
 
             {isDashboard && (
                 <div className="sp-nav-links">

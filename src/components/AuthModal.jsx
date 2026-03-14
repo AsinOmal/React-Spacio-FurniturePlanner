@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDesign } from '../context/DesignContext'
-import { X } from 'lucide-react'
+import { X, Armchair } from 'lucide-react'
 import './AuthModal.css'
 
 export default function AuthModal({ isOpen, onClose, initialView = 'choice' }) {
@@ -25,6 +25,7 @@ export default function AuthModal({ isOpen, onClose, initialView = 'choice' }) {
             const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email, password })
             })
 
@@ -68,7 +69,9 @@ export default function AuthModal({ isOpen, onClose, initialView = 'choice' }) {
                 {view === 'choice' ? (
                     <div className="auth-choice-view">
                         <div className="auth-logo">
-                            <span className="logo-icon">🛋️</span>
+                            <span className="logo-icon" style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+                                <Armchair size={36} color="var(--s-accent)" />
+                            </span>
                             <h2>Start Your Design</h2>
                             <p>How would you like to continue?</p>
                         </div>
@@ -88,7 +91,9 @@ export default function AuthModal({ isOpen, onClose, initialView = 'choice' }) {
                 ) : (
                     <div className="auth-login-view">
                         <div className="auth-logo">
-                            <span className="logo-icon">🛋️</span>
+                            <span className="logo-icon" style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+                                <Armchair size={36} color="var(--s-accent)" />
+                            </span>
                             <h2>{isRegister ? 'Create Account' : 'Welcome Back'}</h2>
                             <p>{isRegister ? 'Sign up to build your spaces' : 'Sign in to save your designs'}</p>
                         </div>

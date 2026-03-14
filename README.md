@@ -41,6 +41,7 @@
 - **First-Person Walkthrough** — toggle "Walk Mode" to drop to floor level and look/walk around using WASD and your mouse (FPS style)
 - **Walls Toggle** — optionally hide the 3D walls for an open-air blueprint view of your layout
 - Accurate wall, floor, and ceiling materials using your chosen colours
+- **Persistent Viewport Settings** — your wall visibility, shadows, and lighting intensities are synced across all 3D views (Live Panel and Full Preview)
 
 ### 💾 Design Management (Dashboard)
 - **Save designs** with a custom name
@@ -52,6 +53,7 @@
 - **Real Accounts** — secure user registration and login backed by MongoDB and bcryptjs
 - **Stateless JWT** — JSON Web Tokens used for secure, stateless API communication
 - **Guest / Demo Mode** — start designing without creating an account
+- **Feature Restrictions** — guests are intelligently prompted to sign up when attempting to upload custom models or save designs
 - Clean inline **AuthModal** for Sign In, Sign Up, or Guest Mode — no page redirects
 - Session-aware Navbar: shows "My Designs" and "Sign Out" when logged in
 
@@ -179,6 +181,31 @@ npm run preview
 
 ---
 
+## 🧪 Testing
+
+Spacio includes a full suite of automated unit and integration tests.
+
+### Frontend Unit Tests (Vitest)
+Tests coordinate boundary logic (`clampToRoom`), colour shade utilities, and `DesignContext` state management using a mocked backend.
+
+```bash
+# Run all frontend tests
+npm run test
+
+# Run tests once with a summary output
+npm run test:run
+```
+
+### Backend API Tests (Supertest)
+Integration tests for the Express API endpoints backed by `mongodb-memory-server` to ensure route logic and JWT authentication work correctly without needing a real database running.
+
+```bash
+cd server
+npm run test
+```
+
+---
+
 ## 🔑 Demo Credentials
 
 | Username | Password |
@@ -254,6 +281,11 @@ Dark mode is activated by toggling the `html.dark` class, swapping all token val
 | `@react-three/drei` | ^10.7.7 | Three.js helpers (OrbitControls, etc.) |
 | `lucide-react` | ^0.575.0 | SVG icon library |
 | `vite` | ^7.3.1 | Development server & bundler |
+| `vitest` | ^4.0.18 | Next generation testing framework |
+| `supertest` | ^7.0.0 | HTTP assertions for backend testing |
+| `zod` | ^3.24.2 | Strict schema validation |
+| `helmet` | ^8.0.0 | Express security headers |
+| `express-rate-limit` | ^7.5.0 | IP throttling & DDoS protection |
 
 ---
 

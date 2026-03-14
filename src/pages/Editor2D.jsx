@@ -9,8 +9,10 @@ import autoTable from 'jspdf-autotable'
 import {
   ArrowLeft, Sun, Moon, Save, Box,
   Undo2, Redo2, Maximize, Grid3x3, Tags, Download,
-  Trash2, Pointer, Package, Ruler, PenTool, Upload, Cuboid
+  Trash2, Pointer, Package, Ruler, PenTool, Upload, Cuboid,
+  Armchair, Columns, Monitor, Library, Bed
 } from 'lucide-react'
+import { fetchWithAuth } from '../utils/api'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { Room as Room3D, FurniturePiece as FurniturePiece3D } from '../components/Scene3D'
@@ -21,14 +23,14 @@ const PAD = 40
 const GRID_PX = SCALE / 4   // 20px = 0.25m snap resolution
 
 const LIBRARY = [
-  { type: 'Chair', width: 0.6, height: 0.6, defaultColor: '#8B7355', emoji: '🪑' },
-  { type: 'Dining Table', width: 1.6, height: 0.9, defaultColor: '#6B4C2A', emoji: '🍽️' },
-  { type: 'Sofa', width: 2.0, height: 0.9, defaultColor: '#708090', emoji: '🛋️' },
-  { type: 'Bed', width: 2.0, height: 1.6, defaultColor: '#DEB887', emoji: '🛏️' },
-  { type: 'Side Table', width: 0.5, height: 0.5, defaultColor: '#A0785A', emoji: '🪵' },
-  { type: 'Wardrobe', width: 1.8, height: 0.6, defaultColor: '#5C4033', emoji: '🗄️' },
-  { type: 'Desk', width: 1.2, height: 0.6, defaultColor: '#8B8B6B', emoji: '🖥️' },
-  { type: 'Bookshelf', width: 1.0, height: 0.3, defaultColor: '#7B6B3A', emoji: '📚' },
+  { type: 'Chair', width: 0.6, height: 0.6, defaultColor: '#8B7355', icon: 'Armchair' },
+  { type: 'Dining Table', width: 1.6, height: 0.9, defaultColor: '#6B4C2A', icon: 'Square' },
+  { type: 'Sofa', width: 2.0, height: 0.9, defaultColor: '#708090', icon: 'Lamp' }, // Using Lamp or similar as proxy or I can use Armchair/Box
+  { type: 'Bed', width: 2.0, height: 1.6, defaultColor: '#DEB887', icon: 'Bed' },
+  { type: 'Side Table', width: 0.5, height: 0.5, defaultColor: '#A0785A', icon: 'Box' },
+  { type: 'Wardrobe', width: 1.8, height: 0.6, defaultColor: '#5C4033', icon: 'Columns' },
+  { type: 'Desk', width: 1.2, height: 0.6, defaultColor: '#8B8B6B', icon: 'Monitor' },
+  { type: 'Bookshelf', width: 1.0, height: 0.3, defaultColor: '#7B6B3A', icon: 'Library' },
 ]
 
 // ── L-Shape helper ───────────────────────────────────────────
@@ -242,7 +244,9 @@ function LeaveConfirmModal({ onConfirm, onCancel, onSaveAndLeave, isGuest }) {
           <button className="btn-cancel" onClick={onCancel}>Stay Here</button>
           {!isGuest ? (
             <button className="btn-primary" onClick={onSaveAndLeave}>Save & Leave</button>
-          ) : <div />}
+          ) : (
+            <button className="btn-primary" onClick={onSaveAndLeave}>Save</button>
+          )}
           <button className="btn-danger" style={{ gridColumn: '1 / -1' }} onClick={onConfirm}>Leave Without Saving</button>
         </div>
       </div>
@@ -261,6 +265,8 @@ export default function Editor2D() {
     setRoom, saveDesign,
     currentDesignId, currentDesignName,
     undo, redo, canUndo, canRedo,
+    showLive3D, setShowLive3D,
+    viewportSettings, setViewportSettings
   } = useDesign()
 
   const [isDrawingWall, setIsDrawingWall] = useState(room.shape === 'Custom' && (!room.customPolygon || room.customPolygon.length === 0))
@@ -278,7 +284,6 @@ export default function Editor2D() {
   const [showLabels, setShowLabels] = useState(true)
   const [showDimensions, setShowDimensions] = useState(true)
   const [showGrid, setShowGrid] = useState(true)
-  const [showLivePreview, setShowLivePreview] = useState(false)
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
   const [stageScale, setStageScale] = useState(1.4)
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 })
@@ -345,6 +350,12 @@ export default function Editor2D() {
 
   // ── Custom Model Upload ──────────────────────
   const handleFileUpload = async (e) => {
+    if (isGuest) {
+      setShowLoginPrompt(true)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -359,10 +370,8 @@ export default function Editor2D() {
       const formData = new FormData()
       formData.append('model', file)
 
-      const token = localStorage.getItem('token')
-      const res = await fetch('/api/models/upload', {
+      const res = await fetchWithAuth('/api/models/upload', {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData
       })
 
@@ -721,7 +730,14 @@ export default function Editor2D() {
             title="Redo (Ctrl+Y)"
           ><Redo2 size={14} /> Redo</button>
         </div>
-        <div className="toolstrip-right">
+        <div className="toolstrip-center">
+          <button
+            className={`tool-btn ${showLive3D ? 'tool-btn--active' : ''}`}
+            onClick={() => setShowLive3D(s => !s)}
+            title="Toggle Live 3D View"
+          >
+            <Cuboid size={16} /> Live 3D
+          </button>
           <button
             className={`tool-btn ${snapOn ? 'tool-btn--active' : ''}`}
             onClick={() => setSnapOn(s => !s)}
@@ -753,21 +769,15 @@ export default function Editor2D() {
             onClick={() => setShowDimensions(s => !s)}
             title="Toggle Ruler"
           ><Ruler size={14} /> Ruler</button>
+          
+          <div className="tool-divider" />
+          
           <button
-            className="tool-btn"
+            className="tool-btn btn-export-pdf"
             onClick={handleExport}
             title="Export PDF Report"
           ><Download size={14} /> Export PDF</button>
 
-          <div className="tool-divider" />
-
-          <button
-            className={`tool-btn ${showLivePreview ? 'tool-btn--active' : ''}`}
-            onClick={() => setShowLivePreview(s => !s)}
-            title="Toggle Live 3D Preview"
-          >
-            <Cuboid size={16} /> 3D View
-          </button>
         </div>
       </div>
 
@@ -785,7 +795,16 @@ export default function Editor2D() {
                 className="lib-item"
                 onClick={() => addFurniture(item)}
               >
-                <span className="lib-emoji">{item.emoji}</span>
+                <span className="lib-icon">
+                  {item.type === 'Chair' && <Armchair size={22} />}
+                  {item.type === 'Dining Table' && <Grid3x3 size={22} />}
+                  {item.type === 'Sofa' && <Armchair size={22} />}
+                  {item.type === 'Bed' && <Bed size={22} />}
+                  {item.type === 'Side Table' && <Box size={22} />}
+                  {item.type === 'Wardrobe' && <Columns size={22} />}
+                  {item.type === 'Desk' && <Monitor size={22} />}
+                  {item.type === 'Bookshelf' && <Library size={22} />}
+                </span>
                 <span className="lib-name">{item.type}</span>
                 <span className="lib-size">{item.width}×{item.height}m</span>
               </button>
@@ -804,7 +823,13 @@ export default function Editor2D() {
               className="btn-topbar"
               style={{ width: '100%', justifyContent: 'center', backgroundColor: 'var(--bg-card)', border: '1px dashed var(--border)' }}
               disabled={isUploading}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                if (isGuest) {
+                  setShowLoginPrompt(true)
+                } else {
+                  fileInputRef.current?.click()
+                }
+              }}
               title="Upload a custom .glb or .gltf 3D model"
             >
               <Upload size={16} />
@@ -971,20 +996,27 @@ export default function Editor2D() {
           </div>
 
           {/* Live 3D Preview Panel */}
-          {showLivePreview && (
+          {showLive3D && (
             <div className="live-preview-panel">
+              <div className="live-preview-header" style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '8px 12px', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10, fontSize: 13, fontWeight: 500 }}>
+                <span>Live 3D View</span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn-topbar" style={{ padding: '2px 10px', fontSize: 12, borderColor: 'rgba(255,255,255,0.3)', color: 'white', background: 'rgba(255,255,255,0.1)' }} onClick={() => navigate('/preview3d')}>Go to 3D View</button>
+                  <button className="btn-close-preview" style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: 16 }} onClick={() => setShowLive3D(false)}>×</button>
+                </div>
+              </div>
               <Canvas
                 shadows
                 camera={{ position: [room.width / 2, Math.max(room.length, room.width), room.length * 1.8], fov: 50 }}
                 style={{ background: 'linear-gradient(180deg, #c9dde8 0%, #e8eff4 100%)' }}
               >
                 <ambientLight intensity={0.55} />
-                <directionalLight position={[room.width * 1.2, 6, room.length * 1.2]} intensity={1.4} castShadow shadow-mapSize={[1024, 1024]} />
+                <directionalLight position={[room.width * 1.2, 6, room.length * 1.2]} intensity={viewportSettings.shading * 1.4} castShadow={viewportSettings.shadows} shadow-mapSize={[1024, 1024]} />
                 <pointLight position={[room.width / 2, 2.4, room.length / 2]} intensity={0.35} />
                 <hemisphereLight skyColor="#ddeeff" groundColor="#8a7060" intensity={0.4} />
 
-                <Room3D room={room} showWalls={true} />
-                {furniture.map(item => <FurniturePiece3D key={item.id} item={item} />)}
+                <Room3D room={room} showWalls={viewportSettings.showWalls} />
+                {furniture.map(item => <FurniturePiece3D key={item.id} item={item} shadows={viewportSettings.shadows} />)}
 
                 <OrbitControls target={[room.width / 2, 0.6, room.length / 2]} maxPolarAngle={Math.PI / 2.1} minDistance={1} maxDistance={22} />
               </Canvas>
@@ -1084,6 +1116,11 @@ export default function Editor2D() {
           onConfirm={() => navigate(isGuest ? '/' : '/dashboard')}
           onCancel={() => setShowLeaveConfirm(false)}
           onSaveAndLeave={() => {
+            if (isGuest) {
+              setShowLeaveConfirm(false)
+              setShowLoginPrompt(true)
+              return
+            }
             if (currentDesignId) {
               saveDesign(currentDesignName).then(() => {
                 navigate('/dashboard')

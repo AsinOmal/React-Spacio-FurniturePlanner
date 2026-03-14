@@ -1,5 +1,5 @@
-/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
+import { fetchWithAuth } from '../utils/api'
 
 const DesignContext = createContext()
 
@@ -18,6 +18,13 @@ export function DesignProvider({ children }) {
   const [savedDesigns, setSavedDesigns] = useState([])
   const [currentDesignId, setCurrentDesignId] = useState(null)
   const [currentDesignName, setCurrentDesignName] = useState('Untitled Design')
+
+  const [showLive3D, setShowLive3D] = useState(false)
+  const [viewportSettings, setViewportSettings] = useState({
+    showWalls: true,
+    shadows: true,
+    shading: 1.0
+  })
 
   // ── Undo / Redo history ──────────────────────────────────────
   const historyRef = useRef([[]])   // array of furniture snapshots
@@ -57,9 +64,7 @@ export function DesignProvider({ children }) {
       return
     }
     try {
-      const res = await fetch('/api/designs', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const res = await fetchWithAuth('/api/designs')
       if (res.ok) {
         const data = await res.json()
         setSavedDesigns(data)
@@ -81,20 +86,18 @@ export function DesignProvider({ children }) {
     try {
       let res;
       if (currentDesignId) {
-        res = await fetch(`/api/designs/${currentDesignId}`, {
+        res = await fetchWithAuth(`/api/designs/${currentDesignId}`, {
           method: 'PUT',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ name, room, furniture })
         })
       } else {
-        res = await fetch('/api/designs', {
+        res = await fetchWithAuth('/api/designs', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ name, room, furniture })
         })
@@ -132,9 +135,8 @@ export function DesignProvider({ children }) {
     if (!token) return
 
     try {
-      const res = await fetch(`/api/designs/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await fetchWithAuth(`/api/designs/${id}`, {
+        method: 'DELETE'
       })
 
       if (res.ok) {
@@ -205,7 +207,9 @@ export function DesignProvider({ children }) {
       currentDesignName, setCurrentDesignName,
       saveDesign, loadDesign, deleteDesign,
       addFurniture, updateFurniture, deleteFurniture, commitFurnitureHistory,
-      undo, redo, canUndo, canRedo
+      undo, redo, canUndo, canRedo,
+      showLive3D, setShowLive3D,
+      viewportSettings, setViewportSettings
     }}>
       {children}
     </DesignContext.Provider>

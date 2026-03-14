@@ -1,6 +1,20 @@
 const express = require('express')
+const { z } = require('zod')
 const Design = require('../models/Design')
 const authMiddleware = require('../middleware/auth')
+
+const designSchema = z.object({
+  name: z.string().max(100).optional(),
+  room: z.object({
+    width: z.number().min(1).max(100),
+    length: z.number().min(1).max(100),
+    shape: z.string().optional(),
+    wallColor: z.string().optional(),
+    floorColor: z.string().optional()
+  }).passthrough(),
+  furniture: z.array(z.any()).max(300, "Too many furniture items"),
+  thumbnail: z.string().optional()
+})
 
 const router = express.Router()
 
@@ -32,11 +46,11 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // ── CREATE OR UPDATE A DESIGN ─────────────────────────────────
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { name, room, furniture, thumbnail } = req.body
-
-    if (!room || !furniture) {
-      return res.status(400).json({ error: 'Room and furniture data are required' })
+    const validationResult = designSchema.safeParse(req.body)
+    if (!validationResult.success) {
+      return res.status(400).json({ error: validationResult.error.errors[0].message })
     }
+    const { name, room, furniture, thumbnail } = validationResult.data
 
     // We'll just create a new design for every save right now to keep it simple,
     // or you could pass an ID to update an existing one. For this example, 
@@ -60,7 +74,11 @@ router.post('/', authMiddleware, async (req, res) => {
 // ── UPDATE A DESIGN ───────────────────────────────────────────
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const { name, room, furniture, thumbnail } = req.body
+    const validationResult = designSchema.safeParse(req.body)
+    if (!validationResult.success) {
+      return res.status(400).json({ error: validationResult.error.errors[0].message })
+    }
+    const { name, room, furniture, thumbnail } = validationResult.data
 
     const updatedDesign = await Design.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.userId },

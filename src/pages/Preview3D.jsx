@@ -10,11 +10,13 @@ import './Preview3D.css'
 // ── Main Page ──────────────────────────────────────────────────
 export default function Preview3D() {
   const navigate = useNavigate()
-  const { room, furniture } = useDesign()
-  const [shading, setShading] = useState(1.0)   // 0.1 – 2.0
-  const [shadows, setShadows] = useState(true)
-  const [isWalking, setIsWalking] = useState(false)
-  const [showWalls, setShowWalls] = useState(true)
+  const { room, furniture, viewportSettings, setViewportSettings } = useDesign()
+  
+  const { shading, shadows, isWalking, showWalls } = viewportSettings
+
+  const updateSettings = (updates) => {
+    setViewportSettings(prev => ({ ...prev, ...updates }))
+  }
 
   return (
     <div className="preview3d">
@@ -34,7 +36,7 @@ export default function Preview3D() {
             <input
               type="range" min="0.1" max="2.0" step="0.05"
               value={shading}
-              onChange={e => setShading(parseFloat(e.target.value))}
+              onChange={e => updateSettings({ shading: parseFloat(e.target.value) })}
               style={{ width: 90, accentColor: '#f59e0b', cursor: 'pointer' }}
               title="Sunlight intensity"
             />
@@ -42,7 +44,7 @@ export default function Preview3D() {
           </label>
           {/* Walls toggle */}
           <button
-            onClick={() => setShowWalls(w => !w)}
+            onClick={() => updateSettings({ showWalls: !showWalls })}
             title={showWalls ? 'Hide Walls' : 'Show Walls'}
             style={{
               display: 'flex', alignItems: 'center', gap: 4,
@@ -56,7 +58,7 @@ export default function Preview3D() {
           </button>
           {/* Shadow toggle */}
           <button
-            onClick={() => setShadows(s => !s)}
+            onClick={() => updateSettings({ shadows: !shadows })}
             title={shadows ? 'Shadows ON — click to disable' : 'Shadows OFF — click to enable'}
             style={{
               display: 'flex', alignItems: 'center', gap: 4,
@@ -70,7 +72,7 @@ export default function Preview3D() {
           </button>
           {/* Walk mode toggle */}
           <button
-            onClick={() => setIsWalking(w => !w)}
+            onClick={() => updateSettings({ isWalking: !isWalking })}
             title={isWalking ? 'Exit Walk Mode (ESC)' : 'Enter First-Person Walk Mode'}
             style={{
               display: 'flex', alignItems: 'center', gap: 4,
@@ -129,7 +131,7 @@ export default function Preview3D() {
             {/* Controls toggle based on walking state */}
             {isWalking ? (
               <>
-                <PointerLockControls onUnlock={() => setIsWalking(false)} />
+                <PointerLockControls onUnlock={() => updateSettings({ isWalking: false })} />
                 <FpsController room={room} />
               </>
             ) : (

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { Armchair } from 'lucide-react'
 import './Login.css'
 
 export default function Login() {
@@ -35,9 +36,11 @@ export default function Login() {
   return (
     <div className="login-container">
       <div className="login-card">
-        <div className="login-logo">
-          <span className="logo-icon">🛋️</span>
-          <h1>Spacio</h1>
+        <div className="login-box">
+          <span className="logo-icon" style={{ display: 'flex', justifyContent: 'center' }}>
+            <Armchair size={36} color="var(--s-accent)" />
+          </span>
+          <h2>Welcome to Spacio</h2>
           <p>Designer Portal</p>
         </div>
         <form onSubmit={handleLogin} className="login-form">
