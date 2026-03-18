@@ -66,7 +66,7 @@ export default function Dashboard() {
   }
 
   const handleDeleteConfirm = () => {
-    deleteDesign(deleteTarget.id)
+    deleteDesign(deleteTarget._id)
     setDeleteTarget(null)
   }
 
