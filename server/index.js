@@ -23,8 +23,11 @@ async function start() {
     process.exit(1)
   }
 
-  const server = app.listen(config.PORT, () => {
-    logger.info(`Spacio API running on http://localhost:${config.PORT}`)
+  // Bind to 0.0.0.0 so the container accepts connections on all interfaces
+  // (IPv4 included) — required by container platforms like Choreo/Kubernetes,
+  // whose mesh dials the pod over IPv4. Binding the default (::) can refuse it.
+  const server = app.listen(config.PORT, '0.0.0.0', () => {
+    logger.info(`Spacio API running on http://0.0.0.0:${config.PORT}`)
   })
 
   const shutdown = (signal) => {
