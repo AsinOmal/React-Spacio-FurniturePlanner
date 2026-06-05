@@ -8,6 +8,9 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.js'],
+    // Only run the frontend suite — the backend has its own Jest tests in
+    // server/ with their own dependencies (supertest, mongodb-memory-server).
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
   },
   server: {
     proxy: {
