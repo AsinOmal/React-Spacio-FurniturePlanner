@@ -4,8 +4,7 @@
  *        saveDesign, loadDesign, deleteDesign
  */
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { render, screen, act } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, act } from '@testing-library/react'
 import { DesignProvider, useDesign } from '../context/DesignContext'
 
 // ── Helper: renders a component inside DesignProvider and returns the context ──

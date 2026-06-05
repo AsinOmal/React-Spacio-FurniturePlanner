@@ -183,7 +183,7 @@ cat > server/.env << 'EOF'
 PORT=5005
 MONGODB_URI=mongodb://localhost:27017/spacio
 JWT_SECRET=replace-with-a-strong-random-secret
-REFRESH_TOKEN_SECRET=replace-with-another-strong-secret
+JWT_REFRESH_SECRET=replace-with-another-strong-secret
 NODE_ENV=development
 CLIENT_URL=http://localhost:5173
 EOF
@@ -242,9 +242,9 @@ Create a `.env` file in the `server/` directory:
 |---|---|---|---|
 | `PORT` | No | `5005` | Port the Express server listens on |
 | `MONGODB_URI` | Yes | — | MongoDB connection string |
-| `JWT_SECRET` | Yes | fallback (dev only) | Secret key for signing access tokens |
-| `REFRESH_TOKEN_SECRET` | No | same as `JWT_SECRET` | Secret key for signing refresh tokens |
-| `NODE_ENV` | No | `development` | Set to `production` to enable secure cookies |
+| `JWT_SECRET` | Yes (prod) | dev-only fallback | Secret key for signing access tokens. **Required in production** — the server refuses to start without it. |
+| `JWT_REFRESH_SECRET` | Yes (prod) | dev-only fallback | Secret for signing refresh tokens (must differ from `JWT_SECRET`). `REFRESH_TOKEN_SECRET` is accepted as an alias. |
+| `NODE_ENV` | No | `development` | Set to `production` to enable secure cookies and strict secret validation |
 | `CLIENT_URL` | No | `http://localhost:5173` | CORS origin for the frontend |
 
 ---

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, PointerLockControls, KeyboardControls } from '@react-three/drei'
 import { useNavigate } from 'react-router-dom'
