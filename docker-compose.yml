@@ -33,7 +33,8 @@ services:
     container_name: spacio_frontend
     restart: unless-stopped
     ports:
-      - "80:80"
+      # host 80 → container 8080 (nginx-unprivileged listens on 8080)
+      - "80:8080"
     environment:
       # nginx proxies /api and /uploads here (the backend service name on the
       # docker network). On Choreo, set this to the backend's public URL instead.
