@@ -2,6 +2,10 @@ import { useRef, createContext, useContext, useMemo, Suspense, Component } from 
 import { useFrame, useThree } from '@react-three/fiber'
 import { useKeyboardControls, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
+import { shadeColor } from '../utils/color'
+import { getProceduralTexture, MATERIAL_TEXTURE } from '../utils/proceduralTextures'
+
+export { shadeColor }
 
 export const SCALE = 80
 export const PAD = 40
@@ -38,10 +42,18 @@ function Mat({ color, roughness, metalness }) {
     const finalRoughness = roughness ?? preset.roughness
     const finalMetalness = metalness ?? preset.metalness
 
+    // Procedural surface texture for this material (greyscale → tinted by colour)
+    const tex = useMemo(
+        () => getProceduralTexture(MATERIAL_TEXTURE[materialName]),
+        [materialName]
+    )
+
     return (
         <meshPhysicalMaterial
             color={color}
             {...preset}
+            map={tex?.map || null}
+            normalMap={tex?.normalMap || null}
             roughness={finalRoughness}
             metalness={finalMetalness}
         />
@@ -358,15 +370,20 @@ function Bookshelf3D({ fw, fd, fh, color }) {
                     </mesh>
                 )
             })}
-            {/* Books on each shelf */}
+            {/* Books on each shelf — deterministic sizes (stable across renders) */}
             {Array.from({ length: shelfCount }).map((_, si) => {
                 const shelfY = (fh / (shelfCount + 1)) * (si + 1)
                 let xCursor = -fw / 2 + boardT + 0.03
                 const books = []
                 let bi = 0
+                // Deterministic pseudo-random in [0,1) from an integer seed.
+                const seeded = (n) => {
+                    const x = Math.sin(n * 127.1) * 43758.5453
+                    return x - Math.floor(x)
+                }
                 while (xCursor < fw / 2 - boardT - 0.05) {
-                    const bw = 0.04 + Math.random() * 0.04
-                    const bh = 0.1 + Math.random() * 0.12
+                    const bw = 0.04 + seeded(si * 100 + bi) * 0.04
+                    const bh = 0.1 + seeded(si * 100 + bi + 50) * 0.12
                     books.push(
                         <mesh key={bi++} position={[xCursor + bw / 2, shelfY + boardT / 2 + bh / 2, 0]} castShadow>
                             <boxGeometry args={[bw, bh, fd * 0.75]} />
@@ -384,15 +401,6 @@ function Bookshelf3D({ fw, fd, fh, color }) {
 // ══════════════════════════════════════════════════════════════
 // Utility: lighten/darken a hex colour
 // ══════════════════════════════════════════════════════════════
-export function shadeColor(hex, amount) {
-    let col = hex.replace('#', '')
-    if (col.length === 3) col = col.split('').map(c => c + c).join('')
-    const num = parseInt(col, 16)
-    const r = Math.min(255, Math.max(0, (num >> 16) + amount))
-    const g = Math.min(255, Math.max(0, ((num >> 8) & 0xff) + amount))
-    const b = Math.min(255, Math.max(0, (num & 0xff) + amount))
-    return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`
-}
 
 // ══════════════════════════════════════════════════════════════
 // Dispatcher — picks the right component per type
@@ -414,7 +422,7 @@ class ModelErrorBoundary extends Component {
         super(props)
         this.state = { hasError: false }
     }
-    static getDerivedStateFromError(error) {
+    static getDerivedStateFromError() {
         return { hasError: true }
     }
     componentDidCatch(error, errorInfo) {

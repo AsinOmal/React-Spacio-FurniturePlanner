@@ -10,17 +10,16 @@ import {
   ArrowLeft, Sun, Moon, Save, Box,
   Undo2, Redo2, Maximize, Grid3x3, Tags, Download,
   Trash2, Pointer, Package, Ruler, PenTool, Upload, Cuboid,
-  Armchair, Columns, Monitor, Library, Bed
+  Armchair, Columns, Monitor, Library, Bed, Wand2
 } from 'lucide-react'
 import { fetchWithAuth } from '../utils/api'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { Room as Room3D, FurniturePiece as FurniturePiece3D } from '../components/Scene3D'
+import { SCALE, PAD, GRID_PX, getLShapeRects, clampToRoom, snapGrid } from '../utils/geometry'
+import { computeSnap } from '../utils/snapping'
+import { autoArrange } from '../utils/autoArrange'
 import './Editor2D.css'
-
-const SCALE = 80
-const PAD = 40
-const GRID_PX = SCALE / 4   // 20px = 0.25m snap resolution
 
 const LIBRARY = [
   { type: 'Chair', width: 0.6, height: 0.6, defaultColor: '#8B7355', icon: 'Armchair' },
@@ -32,59 +31,6 @@ const LIBRARY = [
   { type: 'Desk', width: 1.2, height: 0.6, defaultColor: '#8B8B6B', icon: 'Monitor' },
   { type: 'Bookshelf', width: 1.0, height: 0.3, defaultColor: '#7B6B3A', icon: 'Library' },
 ]
-
-// ── L-Shape helper ───────────────────────────────────────────
-function getLShapeRects(room) {
-  const fullW = room.width * SCALE
-  const fullH = room.length * SCALE
-  const mainH = Math.round(fullH * 0.6)
-  const wingH = fullH - mainH
-  const wingW = Math.round(fullW * 0.5)
-  return [
-    { x: PAD, y: PAD, w: fullW, h: mainH },
-    { x: PAD, y: PAD + mainH, w: wingW, h: wingH },
-  ]
-}
-
-// ── Boundary clamp — x,y are the CENTER of the item ─────────
-function clampToRoom(cx, cy, item, room) {
-  const iw = item.width * SCALE * item.scale
-  const ih = item.height * SCALE * item.scale
-  const rad = (item.rotation || 0) * Math.PI / 180
-
-  // Half-extents of the rotated bounding box
-  const hw = (Math.abs(Math.cos(rad)) * iw + Math.abs(Math.sin(rad)) * ih) / 2
-  const hh = (Math.abs(Math.sin(rad)) * iw + Math.abs(Math.cos(rad)) * ih) / 2
-
-  if (room.shape === 'L-Shape') {
-    const [main, wing] = getLShapeRects(room)
-    const floorMinX = main.x, floorMaxX = main.x + main.w
-    const floorMinY = main.y, floorMaxY = main.y + main.h
-    // Check if the item's center is in the wing zone
-    const inWing = cy + hh > main.y + main.h
-    const r = inWing ? wing : main
-    return {
-      x: Math.max(r.x + hw, Math.min(cx, r.x + r.w - hw)),
-      y: Math.max(r.y + hh, Math.min(cy, r.y + r.h - hh)),
-    }
-    void floorMinX; void floorMaxX; void floorMinY; void floorMaxY
-  }
-
-  const floorLeft = PAD
-  const floorTop = PAD
-  const floorRight = PAD + room.width * SCALE
-  const floorBottom = PAD + room.length * SCALE
-
-  return {
-    x: Math.max(floorLeft + hw, Math.min(cx, floorRight - hw)),
-    y: Math.max(floorTop + hh, Math.min(cy, floorBottom - hh)),
-  }
-}
-
-// ── Snap helper ──────────────────────────────────────────────
-function snapGrid(val) {
-  return Math.round(val / GRID_PX) * GRID_PX
-}
 
 // ── Selected Item Dimension Lines ─────────────────────────────
 function SelectedDimensionLines({ item, room }) {
@@ -258,7 +204,7 @@ function LeaveConfirmModal({ onConfirm, onCancel, onSaveAndLeave, isGuest }) {
 export default function Editor2D() {
   const navigate = useNavigate()
   const {
-    room, furniture,
+    room, furniture, setFurniture,
     selectedId, setSelectedId,
     addFurniture, updateFurniture, deleteFurniture,
     commitFurnitureHistory,
@@ -266,7 +212,7 @@ export default function Editor2D() {
     currentDesignId, currentDesignName,
     undo, redo, canUndo, canRedo,
     showLive3D, setShowLive3D,
-    viewportSettings, setViewportSettings
+    viewportSettings
   } = useDesign()
 
   const [isDrawingWall, setIsDrawingWall] = useState(room.shape === 'Custom' && (!room.customPolygon || room.customPolygon.length === 0))
@@ -281,6 +227,7 @@ export default function Editor2D() {
   const [showToast, setShowToast] = useState(false)
   const isGuest = localStorage.getItem('isGuest') === 'true'
   const [snapOn, setSnapOn] = useState(false)
+  const [activeGuides, setActiveGuides] = useState([])
   const [showLabels, setShowLabels] = useState(true)
   const [showDimensions, setShowDimensions] = useState(true)
   const [showGrid, setShowGrid] = useState(true)
@@ -428,18 +375,44 @@ export default function Editor2D() {
     return () => window.removeEventListener('keydown', onKey)
   }, [undo, redo, selectedId, deleteFurniture])
 
+  // ── Auto-arrange: heuristic layout against walls ─────────────
+  const handleAutoArrange = useCallback(() => {
+    if (furniture.length === 0) return
+    const next = autoArrange(furniture, room)
+    setSelectedId(null)
+    setFurniture(next)
+    commitFurnitureHistory()
+  }, [furniture, room, setFurniture, setSelectedId, commitFurnitureHistory])
+
+  // ── Drag move: live object-snap + alignment guides ───────────
+  const handleDragMove = useCallback((item, e) => {
+    // Grid snap takes priority; object snap only runs when grid snap is off
+    if (snapOn) { setActiveGuides([]); return }
+    const others = furniture.filter(f => f.id !== item.id)
+    const { x, y, guides } = computeSnap(item, e.target.x(), e.target.y(), others, room)
+    e.target.x(x)
+    e.target.y(y)
+    setActiveGuides(guides)
+  }, [snapOn, furniture, room])
+
   // ── Drag end: clamp + optional snap + commit history ─────────
   const handleDragEnd = useCallback((item, e) => {
     // When offsetX/offsetY are set to half-dimensions, e.target.x()/y() returns the CENTER
     let cx = e.target.x()
     let cy = e.target.y()
-    if (snapOn) { cx = snapGrid(cx); cy = snapGrid(cy) }
+    if (snapOn) {
+      cx = snapGrid(cx); cy = snapGrid(cy)
+    } else {
+      const snapped = computeSnap(item, cx, cy, furniture.filter(f => f.id !== item.id), room)
+      cx = snapped.x; cy = snapped.y
+    }
     const clamped = clampToRoom(cx, cy, item, room)
     e.target.x(clamped.x)
     e.target.y(clamped.y)
     updateFurniture(item.id, clamped)
     commitFurnitureHistory()
-  }, [snapOn, room, updateFurniture, commitFurnitureHistory])
+    setActiveGuides([])
+  }, [snapOn, furniture, room, updateFurniture, commitFurnitureHistory])
 
   // ── Poly Draw Handlers ───────────────────────────────────────
   const handleStageClick = useCallback((e) => {
@@ -578,6 +551,36 @@ export default function Editor2D() {
     setStagePos({ x: 0, y: 0 })
   }, [])
 
+  // ── Capture a small thumbnail of the floor plan (for the dashboard) ──
+  const captureThumbnail = useCallback(() => {
+    const stage = stageRef.current
+    if (!stage) return undefined
+    const prevScale = stage.scaleX()
+    const prevPos = stage.position()
+    stage.scale({ x: 1, y: 1 })
+    stage.position({ x: 0, y: 0 })
+
+    const cropW = room.width * SCALE + PAD * 2
+    const cropH = room.length * SCALE + PAD * 2
+
+    let dataUrl
+    try {
+      dataUrl = stage.toDataURL({
+        mimeType: 'image/jpeg',
+        quality: 0.7,
+        pixelRatio: 0.6,   // downscale to keep the data URL small
+        x: 0, y: 0, width: cropW, height: cropH
+      })
+    } catch (e) {
+      console.error('Thumbnail capture failed', e)
+      dataUrl = undefined
+    }
+
+    stage.scale({ x: prevScale, y: prevScale })
+    stage.position(prevPos)
+    return dataUrl
+  }, [room])
+
   // ── Export PDF ───────────────────────────────────────────────
   const handleExport = useCallback(() => {
     if (!stageRef.current) return
@@ -696,7 +699,7 @@ export default function Editor2D() {
               if (isGuest) {
                 setShowLoginPrompt(true)
               } else if (currentDesignId) {
-                const success = await saveDesign(currentDesignName)
+                const success = await saveDesign(currentDesignName, captureThumbnail())
                 if (success) {
                   setShowToast(true)
                   setTimeout(() => setShowToast(false), 2500)
@@ -743,6 +746,12 @@ export default function Editor2D() {
             onClick={() => setSnapOn(s => !s)}
             title="Snap to Grid"
           ><Maximize size={14} /> Snap {snapOn ? 'ON' : 'OFF'}</button>
+          <button
+            className="tool-btn"
+            onClick={handleAutoArrange}
+            disabled={furniture.length === 0}
+            title="Auto-arrange furniture against the walls"
+          ><Wand2 size={14} /> Auto-arrange</button>
           {room.shape === 'Custom' && (
             <button
               className={`tool-btn ${isDrawingWall ? 'tool-btn--active' : ''}`}
@@ -951,11 +960,26 @@ export default function Editor2D() {
                         shadowOpacity={0.2}
                         onClick={() => setSelectedId(item.id)}
                         onTap={() => setSelectedId(item.id)}
+                        onDragMove={e => handleDragMove(item, e)}
                         onDragEnd={e => handleDragEnd(item, e)}
                         onTransformEnd={e => handleTransformEnd(item, e)}
                       />
                     )
                   })}
+
+                  {/* Smart-snap alignment guides */}
+                  {activeGuides.map((g, i) => (
+                    <Line
+                      key={'guide-' + i}
+                      points={g.axis === 'x'
+                        ? [g.pos, g.from, g.pos, g.to]
+                        : [g.from, g.pos, g.to, g.pos]}
+                      stroke="#e11d8f"
+                      strokeWidth={1}
+                      dash={[4, 4]}
+                      listening={false}
+                    />
+                  ))}
 
                   {/* Labels — same pivot as rect: centered on item.x, item.y */}
                   {showLabels && furniture.map(item => {
@@ -1105,7 +1129,7 @@ export default function Editor2D() {
 
       {showSave && (
         <SaveModal
-          onSave={name => { saveDesign(name); setShowSave(false) }}
+          onSave={name => { saveDesign(name, captureThumbnail()); setShowSave(false) }}
           onCancel={() => setShowSave(false)}
         />
       )}
@@ -1122,7 +1146,7 @@ export default function Editor2D() {
               return
             }
             if (currentDesignId) {
-              saveDesign(currentDesignName).then(() => {
+              saveDesign(currentDesignName, captureThumbnail()).then(() => {
                 navigate('/dashboard')
               })
             } else {

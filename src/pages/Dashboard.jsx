@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Trash2, BookDashed } from 'lucide-react'
+import { Trash2, BookDashed, Pencil, Check, X } from 'lucide-react'
 import { useDesign } from '../context/DesignContext'
 import DeleteModal from '../components/DeleteModal'
 import Navbar from '../components/Navbar'
@@ -26,7 +26,27 @@ function DesignThumbnail({ design }) {
       {/* Background = wall colour */}
       <rect x={0} y={0} width={vw} height={vh} fill={room.wallColor} />
       {/* Floor */}
-      <rect x={fx} y={fy} width={fw} height={fh} fill={room.floorColor} rx={2} />
+      {room.shape === 'Custom' && room.customPolygon && room.customPolygon.length > 2 ? (
+        <polygon
+          points={room.customPolygon.map(p => `${p.x * S},${p.y * S}`).join(' ')}
+          fill={room.floorColor}
+        />
+      ) : room.shape === 'L-Shape' ? (
+        <polygon
+          points={`
+            ${fx},${fy} 
+            ${fx + fw},${fy} 
+            ${fx + fw},${fy + fh/2} 
+            ${fx + fw/2},${fy + fh/2} 
+            ${fx + fw/2},${fy + fh} 
+            ${fx},${fy + fh}
+          `}
+          fill={room.floorColor}
+        />
+      ) : (
+        <rect x={fx} y={fy} width={fw} height={fh} fill={room.floorColor} rx={2} />
+      )}
+
       {/* Furniture — f.x/f.y are centres in canvas-px coordinates */}
       {furniture.map(f => {
         const iw = f.width * CANVAS_SCALE * f.scale * S
@@ -46,12 +66,15 @@ function DesignThumbnail({ design }) {
   )
 }
 
-const SHAPE_ICON = { Rectangle: '▬', Square: '■', 'L-Shape': '⌐' }
+const SHAPE_ICON = { Rectangle: '▬', Square: '■', 'L-Shape': '⌐', 'Custom': '⬟' }
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { savedDesigns, loadDesign, deleteDesign, setRoom, setFurniture, setCurrentDesignId } = useDesign()
+  const { savedDesigns, loadDesign, deleteDesign, renameDesign, setRoom, setFurniture, setCurrentDesignId } = useDesign()
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [editingId, setEditingId] = useState(null)
+  const [editingName, setEditingName] = useState('')
+  const inputRef = useRef(null)
 
   const handleNew = () => {
     setRoom({ width: 4, length: 3, shape: 'Rectangle', wallColor: '#F5F5DC', floorColor: '#D2B48C' })
@@ -68,6 +91,25 @@ export default function Dashboard() {
   const handleDeleteConfirm = () => {
     deleteDesign(deleteTarget._id)
     setDeleteTarget(null)
+  }
+
+  const startEdit = (design) => {
+    setEditingId(design._id)
+    setEditingName(design.name)
+    setTimeout(() => inputRef.current?.focus(), 50)
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditingName('')
+  }
+
+  const commitEdit = async () => {
+    const trimmed = editingName.trim()
+    if (trimmed && editingId) {
+      await renameDesign(editingId, trimmed)
+    }
+    cancelEdit()
   }
 
   const totalItems = savedDesigns.reduce((s, d) => s + d.furniture.length, 0)
@@ -135,11 +177,64 @@ export default function Dashboard() {
             {savedDesigns.map(design => (
               <article key={design.id} className="db-card">
                 <div className="db-thumb">
-                  <DesignThumbnail design={design} />
+                  {design.thumbnail ? (
+                    <img
+                      src={design.thumbnail}
+                      alt={`${design.name} preview`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    />
+                  ) : (
+                    <DesignThumbnail design={design} />
+                  )}
                 </div>
                 <div className="db-card-body">
                   <div className="db-card-row">
-                    <h3 className="db-card-name">{design.name}</h3>
+                    {editingId === design._id ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                        <input
+                          ref={inputRef}
+                          value={editingName}
+                          onChange={e => setEditingName(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') commitEdit()
+                            if (e.key === 'Escape') cancelEdit()
+                          }}
+                          onBlur={commitEdit}
+                          style={{
+                            flex: 1, fontSize: 14, fontWeight: 600,
+                            background: 'var(--s-surface-2)', border: '1.5px solid var(--s-accent)',
+                            borderRadius: 6, padding: '3px 8px', color: 'var(--s-text)',
+                            fontFamily: 'var(--f-sans)', outline: 'none'
+                          }}
+                        />
+                        <button onClick={commitEdit} title="Save" style={{ background: 'none', border: 'none', color: 'var(--s-accent)', cursor: 'pointer', padding: 2 }}>
+                          <Check size={15} />
+                        </button>
+                        <button onClick={cancelEdit} title="Cancel" style={{ background: 'none', border: 'none', color: 'var(--s-text-3)', cursor: 'pointer', padding: 2 }}>
+                          <X size={15} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                        <h3 className="db-card-name">{design.name}</h3>
+                        <button
+                          onClick={() => startEdit(design)}
+                          title="Rename design"
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--s-text-3)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: 2
+                          }}
+                        >
+                          <Pencil size={12} />
+                        </button>
+                      </div>
+                    )}
                     <span className="db-card-shape">
                       {SHAPE_ICON[design.room.shape]} {design.room.shape}
                     </span>

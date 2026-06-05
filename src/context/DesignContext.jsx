@@ -79,11 +79,14 @@ export function DesignProvider({ children }) {
   }, [fetchDesigns])
 
   // ── Design save / load / delete ──────────────────────────────
-  const saveDesign = async (name) => {
+  const saveDesign = async (name, thumbnail) => {
     const token = localStorage.getItem('token')
     if (!token) return
 
     try {
+      const payload = { name, room, furniture }
+      if (thumbnail) payload.thumbnail = thumbnail
+
       let res;
       if (currentDesignId) {
         res = await fetchWithAuth(`/api/designs/${currentDesignId}`, {
@@ -91,7 +94,7 @@ export function DesignProvider({ children }) {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ name, room, furniture })
+          body: JSON.stringify(payload)
         })
       } else {
         res = await fetchWithAuth('/api/designs', {
@@ -99,7 +102,7 @@ export function DesignProvider({ children }) {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ name, room, furniture })
+          body: JSON.stringify(payload)
         })
       }
 
@@ -144,6 +147,26 @@ export function DesignProvider({ children }) {
       }
     } catch (e) {
       console.error('Failed to delete design', e)
+    }
+  }
+
+  const renameDesign = async (id, name) => {
+    const token = localStorage.getItem('token')
+    if (!token) return false
+    try {
+      const res = await fetchWithAuth(`/api/designs/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      })
+      if (res.ok) {
+        fetchDesigns()
+        return true
+      }
+      return false
+    } catch (e) {
+      console.error('Failed to rename design', e)
+      return false
     }
   }
 
@@ -205,7 +228,7 @@ export function DesignProvider({ children }) {
       savedDesigns,
       currentDesignId, setCurrentDesignId,
       currentDesignName, setCurrentDesignName,
-      saveDesign, loadDesign, deleteDesign,
+      saveDesign, loadDesign, deleteDesign, renameDesign,
       addFurniture, updateFurniture, deleteFurniture, commitFurnitureHistory,
       undo, redo, canUndo, canRedo,
       showLive3D, setShowLive3D,

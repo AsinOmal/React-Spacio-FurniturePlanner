@@ -1,19 +1,10 @@
 /**
- * Unit tests for shadeColor utility (from Preview3D.jsx)
+ * Unit tests for the shadeColor utility (src/utils/color.js).
+ * Imports the real implementation so the tests track the shipped code.
  * Tests colour lightening, darkening, boundary clamping (0–255), and edge cases.
  */
 import { describe, it, expect } from 'vitest'
-
-// ── Copy of shadeColor from Preview3D.jsx ─────────────────────────────────────
-function shadeColor(hex, amount) {
-  let col = hex.replace('#', '')
-  if (col.length === 3) col = col.split('').map(c => c + c).join('')
-  const num = parseInt(col, 16)
-  const r = Math.min(255, Math.max(0, (num >> 16) + amount))
-  const g = Math.min(255, Math.max(0, ((num >> 8) & 0xff) + amount))
-  const b = Math.min(255, Math.max(0, (num & 0xff) + amount))
-  return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`
-}
+import { shadeColor } from '../utils/color'
 
 // ══════════════════════════════════════════════════════════════════════════════
 describe('shadeColor', () => {
