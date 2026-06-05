@@ -15,6 +15,14 @@ RUN npm run build
 # non-root user can't bind :80, hence port 8080.
 FROM nginxinc/nginx-unprivileged:alpine
 
+# Backend URL the SPA's /api and /uploads proxy to. Baked in as a default
+# because Choreo Web Application components don't expose runtime env vars — the
+# nginx entrypoint runs envsubst on ${BACKEND_URL} at start. docker-compose
+# overrides this locally (BACKEND_URL=http://backend:5005), and it can be
+# overridden per-build with --build-arg BACKEND_URL=... for other environments.
+ARG BACKEND_URL="https://3cb61e27-89e3-425a-8362-2b938772eb42-dev.e1-us-east-azure.choreoapis.dev/spacio/server/v1.0"
+ENV BACKEND_URL=${BACKEND_URL}
+
 # Switch to root only to grant our high UID ownership of the dirs nginx writes
 # to at runtime (cache + the envsubst output dir), then drop back to non-root.
 USER root
