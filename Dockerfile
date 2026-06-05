@@ -12,8 +12,9 @@ RUN npm run build
 # Stage 2: Serve with Nginx
 FROM nginx:alpine
 
-# Copy custom Nginx configuration to proxy API requests and serve static files
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Nginx config as a TEMPLATE — the entrypoint runs envsubst to inject ${BACKEND_URL}
+# at container start, writing the result to /etc/nginx/conf.d/default.conf.
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 
 # Copy production build files from the builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html

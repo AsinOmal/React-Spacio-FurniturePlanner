@@ -22,6 +22,7 @@ services:
       - PORT=5005
       - MONGODB_URI=mongodb://db:27017/spacio
       - JWT_SECRET=${JWT_SECRET:-spacio_default_secret_please_change}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-spacio_default_refresh_secret_change}
     depends_on:
       - db
 
@@ -33,6 +34,10 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+    environment:
+      # nginx proxies /api and /uploads here (the backend service name on the
+      # docker network). On Choreo, set this to the backend's public URL instead.
+      - BACKEND_URL=http://backend:5005
     depends_on:
       - backend
 

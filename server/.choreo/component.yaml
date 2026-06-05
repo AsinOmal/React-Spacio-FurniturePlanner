@@ -1,0 +1,15 @@
+# Choreo component configuration for the Spacio backend (Service component).
+# Choreo reads this from the component's root (server/) to expose the REST API.
+schemaVersion: 1.1
+
+endpoints:
+  - name: spacio-api
+    displayName: Spacio API
+    service:
+      # The Express app mounts everything under /api (see server/app.js).
+      basePath: /api
+      port: 5005
+    type: REST
+    # Public so the frontend's nginx proxy (and you) can reach it.
+    networkVisibilities:
+      - Public
