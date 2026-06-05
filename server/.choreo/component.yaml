@@ -6,8 +6,11 @@ endpoints:
   - name: spacio-api
     displayName: Spacio API
     service:
-      # The Express app mounts everything under /api (see server/app.js).
-      basePath: /api
+      # Root base path so Choreo forwards paths UNCHANGED (transparent proxy).
+      # The Express app already namespaces its own routes under /api and /uploads,
+      # so a /api base path here would double them (/api/api/...). Root also lets
+      # the /uploads static route (outside /api) be reachable.
+      basePath: /
       port: 5005
     type: REST
     # Public so the frontend's nginx proxy (and you) can reach it.
