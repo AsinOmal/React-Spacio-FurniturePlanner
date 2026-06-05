@@ -1,61 +1,47 @@
 require('dotenv').config()
-const express = require('express')
 const mongoose = require('mongoose')
-const cors = require('cors')
-const helmet = require('helmet')
-const rateLimit = require('express-rate-limit')
-const cookieParser = require('cookie-parser')
 
-const path = require('path')
+const { config } = require('./config/env')
+const logger = require('./config/logger')
+const createApp = require('./app')
 
-const app = express()
-const PORT = process.env.PORT || 5000
+// ── Server bootstrap ──────────────────────────────────────────────────────
+// Connects to Mongo, starts the HTTP listener, and shuts everything down
+// cleanly on SIGINT/SIGTERM (important for Docker).
 
-// Middleware
-app.use(helmet())
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true
-}))
-app.use(express.json({ limit: '10mb' })) // Reduced from 50mb to 10mb for better payload security
-app.use(cookieParser())
+const app = createApp()
 
-// Global Rate Limiting (100 requests per 15 minutes per IP)
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { error: 'Too many requests from this IP, please try again after 15 minutes.' }
-})
-app.use('/api', limiter)
+mongoose.connection.on('error', (err) => logger.error({ err }, 'MongoDB connection error'))
+mongoose.connection.on('disconnected', () => logger.warn('MongoDB disconnected'))
 
-// Serve static uploaded files (like 3D models)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+async function start() {
+  try {
+    await mongoose.connect(config.MONGODB_URI)
+    logger.info('Connected to MongoDB')
+  } catch (err) {
+    logger.error({ err }, 'Failed to connect to MongoDB — exiting')
+    process.exit(1)
+  }
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/spacio')
-  .then(() => console.log('✅ Connected to MongoDB locally (spacio)'))
-  .catch(err => console.error('❌ MongoDB connection error:', err))
-
-// Basic Health Route
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Spacio API is running' })
-})
-
-// Routes
-const authRoutes = require('./routes/auth')
-const designRoutes = require('./routes/designs')
-const modelRoutes = require('./routes/models')
-
-app.use('/api/auth', authRoutes)
-app.use('/api/designs', designRoutes)
-app.use('/api/models', modelRoutes)
-
-// Start Server
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`)
+  const server = app.listen(config.PORT, () => {
+    logger.info(`Spacio API running on http://localhost:${config.PORT}`)
   })
+
+  const shutdown = (signal) => {
+    logger.info({ signal }, 'Shutting down gracefully')
+    server.close(async () => {
+      await mongoose.connection.close()
+      logger.info('Closed HTTP server and MongoDB connection')
+      process.exit(0)
+    })
+    // Force-exit if cleanup hangs.
+    setTimeout(() => process.exit(1), 10000).unref()
+  }
+
+  process.on('SIGINT', () => shutdown('SIGINT'))
+  process.on('SIGTERM', () => shutdown('SIGTERM'))
 }
 
-module.exports = app
+start()
 
+module.exports = app

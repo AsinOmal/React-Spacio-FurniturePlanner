@@ -1,11 +1,11 @@
 const jwt = require('jsonwebtoken')
+const { config } = require('../config/env')
 
-const JWT_SECRET = process.env.JWT_SECRET
-
+// Verifies the "Authorization: Bearer <token>" access token and attaches the
+// decoded payload to req.user for downstream handlers.
 const authMiddleware = (req, res, next) => {
-  // Extract token from Header: "Authorization: Bearer <token>"
   const authHeader = req.header('Authorization')
-  
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'No token, authorization denied' })
   }
@@ -13,13 +13,9 @@ const authMiddleware = (req, res, next) => {
   const token = authHeader.split(' ')[1]
 
   try {
-    // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET)
-    
-    // Attach the user payload to the request object so subsequent routes can use it
-    req.user = decoded
+    req.user = jwt.verify(token, config.JWT_SECRET)
     next()
-  } catch (error) {
+  } catch {
     res.status(401).json({ error: 'Token is not valid' })
   }
 }
