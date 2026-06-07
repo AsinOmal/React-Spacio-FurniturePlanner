@@ -11,7 +11,7 @@ endpoints:
       # so a /api base path here would double them (/api/api/...). Root also lets
       # the /uploads static route (outside /api) be reachable.
       basePath: /
-      port: 5005
+      port: 5000
     type: REST
     # Public so the frontend's nginx proxy (and you) can reach it.
     networkVisibilities:

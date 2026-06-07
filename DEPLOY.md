@@ -25,7 +25,7 @@ and the `httpOnly` refresh cookie work with no code changes.
 1. Choreo → **Create Project** → **Create Component → Service**.
 2. Connect GitHub → this repo → `main`.
 3. Build: **Component Directory** = `server`, **Buildpack** = Dockerfile, **Dockerfile** = `server/Dockerfile`.
-   (Endpoint is read from `server/.choreo/component.yaml`: REST, port `5005`, base path `/api`, Public.)
+   (Endpoint is read from `server/.choreo/component.yaml`: REST, port `5000`, base path `/`, Public.)
 4. **Configs & Secrets** → add environment variables:
    | Key | Value |
    |---|---|
@@ -33,6 +33,7 @@ and the `httpOnly` refresh cookie work with no code changes.
    | `JWT_SECRET` | a long random string |
    | `JWT_REFRESH_SECRET` | a **different** long random string |
    | `NODE_ENV` | `production` |
+   | `PORT` | `5000` |
    | `CLIENT_URL` | the frontend URL (fill in after step 3, then redeploy) |
    > ⚠️ In production the server **refuses to start** if `JWT_SECRET` / `JWT_REFRESH_SECRET`
    > are missing, identical, or insecure — set both to distinct strong values.
